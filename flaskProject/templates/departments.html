@@ -2,26 +2,39 @@
 
 {% block content %}
     <h2>Список отделов</h2>
-    <div class="container">
+    <ul class="list-group">
         {% for department in departments %}
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">{{ department.name }}</h5>
-                    <p class="card-text">{{ department.description }}</p>
-                    {% if current_user in department.members %}
-                        <span class="badge badge-success">Присоединился</span>
-                    {% else %}
-                        <a href="{{ url_for('join_department', department_id=department.id) }}" class="btn btn-primary btn-sm">Присоединиться</a>
-                    {% endif %}
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5>{{ department.name }}</h5>
+                        <p>{{ department.description }}</p>
+                    </div>
+                    <div>
+                        {% if current_user in department.members %}
+                            <span class="badge badge-success">Присоединился</span>
+                        {% else %}
+                            <a href="{{ url_for('join_department', department_id=department.id) }}" class="btn btn-primary btn-sm">Присоединиться</a>
+                        {% endif %}
+                    </div>
                 </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item"><strong>Участники:</strong>
-                        {% for user in department.members %}
-                            {{ user.username }},
-                        {% endfor %}
-                    </li>
+                <hr>
+                <h6>Участники отдела:</h6>
+                <ul class="list-group">
+                    {% for user in department.members %}
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="{{ url_for('profile', user_id=user.id) }}">{{ user.username }}</a>
+                                </div>
+                                <div>
+                                    <!-- Добавьте дополнительные действия, если необходимо -->
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
                 </ul>
-            </div>
+            </li>
         {% endfor %}
-    </div>
+    </ul>
 {% endblock %}

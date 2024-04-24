@@ -197,27 +197,28 @@ def delete_department(department_id):
     return redirect(url_for('admin_departments'))
 
 
-@app.route("/profile", methods=['GET', 'POST'])
+@app.route("/profile/<int:user_id>", methods=['GET', 'POST'])
 @login_required
-def profile():
+def profile(user_id):
+    user = User.query.get_or_404(user_id)
     form = EditProfileForm()
 
     if form.validate_on_submit():
-        current_user.bio = form.bio.data
-        current_user.passport_data = form.passport_data.data
-        current_user.department = form.department.data
-        current_user.position = form.position.data
-        current_user.responsibilities = form.responsibilities.data
+        user.bio = form.bio.data
+        user.passport_data = form.passport_data.data
+        user.department = form.department.data
+        user.position = form.position.data
+        user.responsibilities = form.responsibilities.data
         db.session.commit()
         flash('Your profile has been updated!', 'success')
 
-    form.bio.data = current_user.bio
-    form.passport_data.data = current_user.passport_data
-    form.department.data = current_user.department
-    form.position.data = current_user.position
-    form.responsibilities.data = current_user.responsibilities
+    form.bio.data = user.bio
+    form.passport_data.data = user.passport_data
+    form.department.data = user.department
+    form.position.data = user.position
+    form.responsibilities.data = user.responsibilities
 
-    return render_template('profile.html', title='Profile', form=form, user=current_user)
+    return render_template('profile.html', title='Profile', form=form, user=user)
 
 
 @app.route("/edit_profile", methods=['GET', 'POST'])
