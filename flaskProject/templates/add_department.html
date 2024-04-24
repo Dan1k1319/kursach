@@ -1,0 +1,11 @@
+{% extends 'main.html' %}
+
+{% block content %}
+    <h2>Добавить новый отдел</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <p>{{ form.name.label }}<br>{{ form.name }}</p>
+        <p>{{ form.description.label }}<br>{{ form.description }}</p>
+        <p><button type="submit">{{ form.submit }}</button></p>  <!-- Используйте просто form.submit -->
+    </form>
+{% endblock %}

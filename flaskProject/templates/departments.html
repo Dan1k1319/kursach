@@ -1,0 +1,11 @@
+{% extends 'main.html' %}
+
+{% block content %}
+    <h2>List of Departments</h2>
+    <ul>
+        {% for department in departments %}
+            <li>{{ department.name }} - {{ department.description }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('add_department') }}">Add New Department</a>
+{% endblock %}
