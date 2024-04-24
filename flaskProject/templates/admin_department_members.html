@@ -1,0 +1,34 @@
+{% extends 'main.html' %}
+
+{% block content %}
+    <h2>Управление членами отдела</h2>
+    <p><strong>Название отдела:</strong> {{ department.name }}</p>
+    <p><strong>Описание отдела:</strong> {{ department.description }}</p>
+    <hr>
+    <h3>Текущие участники</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Имя пользователя</th>
+                <th>Email</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in department.members %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin_department_members', department_id=department.id) }}">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <button type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

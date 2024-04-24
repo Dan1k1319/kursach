@@ -1,11 +1,27 @@
 {% extends 'main.html' %}
 
 {% block content %}
-    <h2>List of Departments</h2>
-    <ul>
+    <h2>Список отделов</h2>
+    <div class="container">
         {% for department in departments %}
-            <li>{{ department.name }} - {{ department.description }}</li>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ department.name }}</h5>
+                    <p class="card-text">{{ department.description }}</p>
+                    {% if current_user in department.members %}
+                        <span class="badge badge-success">Присоединился</span>
+                    {% else %}
+                        <a href="{{ url_for('join_department', department_id=department.id) }}" class="btn btn-primary btn-sm">Присоединиться</a>
+                    {% endif %}
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Участники:</strong>
+                        {% for user in department.members %}
+                            {{ user.username }},
+                        {% endfor %}
+                    </li>
+                </ul>
+            </div>
         {% endfor %}
-    </ul>
-    <a href="{{ url_for('add_department') }}">Add New Department</a>
+    </div>
 {% endblock %}

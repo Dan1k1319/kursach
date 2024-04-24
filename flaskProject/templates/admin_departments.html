@@ -1,0 +1,38 @@
+{% extends 'main.html' %}
+
+{% block content %}
+    <h2>Admin Departments</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <p>{{ form.name.label }}<br>{{ form.name }}</p>
+        <p>{{ form.description.label }}<br>{{ form.description }}</p>
+        <p><button type="submit">{{ form.submit }}</button></p>
+    </form>
+    <hr>
+    <h3>Existing Departments</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for department in departments %}
+                <tr>
+                    <td>{{ department.id }}</td>
+                    <td>{{ department.name }}</td>
+                    <td>{{ department.description }}</td>
+                    <td>
+                        <a href="{{ url_for('admin_department_members', department_id=department.id) }}">Manage Members</a> |
+                        <form method="POST" action="{{ url_for('delete_department', department_id=department.id) }}">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

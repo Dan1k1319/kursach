@@ -7,7 +7,6 @@ from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextA
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 from flask_bcrypt import Bcrypt
 
-
 app = Flask(__name__, template_folder='templates')
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
@@ -20,20 +19,44 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
 
+
+# Модель для отделов
+class Department(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255), nullable=True)
+    # Связь с пользователями (многие ко многим)
+    members = db.relationship('User', secondary='membership', backref='departments')
+
+
+# Модель для связи между пользователями и отделами
+membership = db.Table('membership',
+                      db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+                      db.Column('department_id', db.Integer, db.ForeignKey('department.id'), primary_key=True)
+                      )
+
+
+# Остальной код остается неизменным
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
-    bio = db.Column(db.String(255))  # Добавьте атрибуты профиля в модель User
+    bio = db.Column(db.String(255))
     passport_data = db.Column(db.String(255))
     department = db.Column(db.String(100))
     position = db.Column(db.String(100))
     responsibilities = db.Column(db.Text)
 
+    def __repr__(self):
+        return f"User('{self.username}', '{self.email}')"
+
+
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+    return User.query.get(int(user_id))
+
 
 class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=20)])
@@ -42,21 +65,19 @@ class RegistrationForm(FlaskForm):
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Sign Up')
 
+
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
-class Department(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(255), nullable=True)
 
 class DepartmentForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     description = TextAreaField('Description')
     submit = SubmitField('Add Department')
+
 
 class EditProfileForm(FlaskForm):
     bio = TextAreaField('Bio')
@@ -70,6 +91,7 @@ class EditProfileForm(FlaskForm):
 @app.route('/')
 def main():
     return render_template('main.html')
+
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -88,6 +110,7 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
 
+
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -101,28 +124,78 @@ def login():
             flash('Login Unsuccessful. Please check email and password', 'danger')
     return render_template('login.html', title='Login', form=form)
 
+
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('main'))
 
+
 @app.route("/departments")
 def departments():
     all_departments = Department.query.all()
     return render_template('departments.html', departments=all_departments)
 
-@app.route("/add_department", methods=['GET', 'POST'])
+
+@app.route("/admin_departments", methods=['GET', 'POST'])
 @login_required
-def add_department():
+def admin_departments():
     form = DepartmentForm()
     if form.validate_on_submit():
         department = Department(name=form.name.data, description=form.description.data)
         db.session.add(department)
         db.session.commit()
-        flash('Department has been added successfully!', 'success')
-        return redirect(url_for('departments'))
-    return render_template('add_department.html', title='Add Department', form=form)
+        flash('Отдел успешно добавлен!', 'success')
+        return redirect(url_for('admin_departments'))
+    departments = Department.query.all()
+    return render_template('admin_departments.html', title='Администрирование отделов', form=form,
+                           departments=departments)
+
+
+@app.route("/admin_department_members/<int:department_id>", methods=['GET', 'POST'])
+@login_required
+def admin_department_members(department_id):
+    department = Department.query.get_or_404(department_id)
+
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+            if user in department.members:
+                department.members.remove(user)
+                db.session.commit()
+                flash('Пользователь успешно удален из отдела!', 'success')
+            else:
+                flash('Пользователь не состоит в этом отделе!', 'danger')
+        return redirect(url_for('admin_department_members',
+                                department_id=department.id))  # Перенаправляем на ту же страницу после удаления
+
+    return render_template('admin_department_members.html', title='Управление членами отдела', department=department)
+
+
+@app.route("/join_department/<int:department_id>", methods=['GET', 'POST'])
+@login_required
+def join_department(department_id):
+    department = Department.query.get_or_404(department_id)
+    if current_user not in department.members:
+        department.members.append(current_user)
+        db.session.commit()
+        flash('You have joined the department!', 'success')
+    else:
+        flash('You are already a member of this department.', 'info')
+    return redirect(url_for('departments'))
+
+
+@app.route("/delete_department/<int:department_id>", methods=['POST'])
+@login_required
+def delete_department(department_id):
+    department = Department.query.get_or_404(department_id)
+    db.session.delete(department)
+    db.session.commit()
+    flash('Department has been deleted successfully!', 'success')
+    return redirect(url_for('admin_departments'))
+
 
 @app.route("/profile", methods=['GET', 'POST'])
 @login_required
@@ -146,6 +219,7 @@ def profile():
 
     return render_template('profile.html', title='Profile', form=form, user=current_user)
 
+
 @app.route("/edit_profile", methods=['GET', 'POST'])
 @login_required
 def edit_profile():
@@ -168,6 +242,7 @@ def edit_profile():
     form.responsibilities.data = current_user.responsibilities
 
     return render_template('edit_profile.html', title='Edit Profile', form=form)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
