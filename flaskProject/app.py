@@ -25,7 +25,11 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
-    profile = db.relationship('UserProfile', backref='user', lazy=True)
+    bio = db.Column(db.String(255))  # Добавьте атрибуты профиля в модель User
+    passport_data = db.Column(db.String(255))
+    department = db.Column(db.String(100))
+    position = db.Column(db.String(100))
+    responsibilities = db.Column(db.Text)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -54,23 +58,6 @@ class DepartmentForm(FlaskForm):
     description = TextAreaField('Description')
     submit = SubmitField('Add Department')
 
-class UserProfile(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    bio = db.Column(db.String(255))
-    passport_data = db.Column(db.String(255))  # Поле для данных паспорта
-    department = db.Column(db.String(100))    # Поле для отдела
-    position = db.Column(db.String(100))      # Поле для должности
-    responsibilities = db.Column(db.Text)      # Поле для должностных обязанностей
-
-class UserProfileForm(FlaskForm):
-    bio = TextAreaField('Bio')
-    passport_data = StringField('Passport Data')
-    department = StringField('Department')
-    position = StringField('Position')
-    responsibilities = TextAreaField('Responsibilities')
-    submit = SubmitField('Save Changes')
-
 class EditProfileForm(FlaskForm):
     bio = TextAreaField('Bio')
     passport_data = StringField('Passport Data')
@@ -78,6 +65,7 @@ class EditProfileForm(FlaskForm):
     position = StringField('Position')
     responsibilities = TextAreaField('Responsibilities')
     submit = SubmitField('Save Changes')
+
 
 @app.route('/')
 def main():
@@ -139,42 +127,24 @@ def add_department():
 @app.route("/profile", methods=['GET', 'POST'])
 @login_required
 def profile():
-    form = UserProfileForm()
+    form = EditProfileForm()
 
-    # Проверяем, был ли отправлен POST запрос для обновления профиля
     if form.validate_on_submit():
-        # Проверяем, есть ли у текущего пользователя профиль
-        if not current_user.profile:
-            # Создаем профиль для пользователя, если его нет
-            new_profile = UserProfile()
-            db.session.add(new_profile)
-            current_user.profile = new_profile
-            db.session.commit()
-
-        # Обновляем данные профиля из формы
-        current_user.profile.bio = form.bio.data
-        current_user.profile.passport_data = form.passport_data.data
-        current_user.profile.department = form.department.data
-        current_user.profile.position = form.position.data
-        current_user.profile.responsibilities = form.responsibilities.data
-
-        # Сохраняем изменения в базе данных
+        current_user.bio = form.bio.data
+        current_user.passport_data = form.passport_data.data
+        current_user.department = form.department.data
+        current_user.position = form.position.data
+        current_user.responsibilities = form.responsibilities.data
         db.session.commit()
-
         flash('Your profile has been updated!', 'success')
-        return redirect(url_for('profile'))
 
-    # Если запрос не POST, заполняем форму данными из профиля пользователя, если таковой имеется
-    if current_user.profile:
-        form.bio.data = current_user.profile.bio
-        form.passport_data.data = current_user.profile.passport_data
-        form.department.data = current_user.profile.department
-        form.position.data = current_user.profile.position
-        form.responsibilities.data = current_user.profile.responsibilities
+    form.bio.data = current_user.bio
+    form.passport_data.data = current_user.passport_data
+    form.department.data = current_user.department
+    form.position.data = current_user.position
+    form.responsibilities.data = current_user.responsibilities
 
     return render_template('profile.html', title='Profile', form=form, user=current_user)
-
-
 
 @app.route("/edit_profile", methods=['GET', 'POST'])
 @login_required
@@ -182,24 +152,22 @@ def edit_profile():
     form = EditProfileForm()
 
     if form.validate_on_submit():
-        current_user.profile.bio = form.bio.data
-        current_user.profile.passport_data = form.passport_data.data
-        current_user.profile.department = form.department.data
-        current_user.profile.position = form.position.data
-        current_user.profile.responsibilities = form.responsibilities.data
+        current_user.bio = form.bio.data
+        current_user.passport_data = form.passport_data.data
+        current_user.department = form.department.data
+        current_user.position = form.position.data
+        current_user.responsibilities = form.responsibilities.data
         db.session.commit()
         flash('Your profile has been updated!', 'success')
+        return redirect(url_for('profile'))
 
-    # Заполняем поля формы текущими данными профиля пользователя, если они существуют
-    if current_user.profile:
-        form.bio.data = current_user.profile.bio
-        form.passport_data.data = current_user.profile.passport_data
-        form.department.data = current_user.profile.department
-        form.position.data = current_user.profile.position
-        form.responsibilities.data = current_user.profile.responsibilities
+    form.bio.data = current_user.bio
+    form.passport_data.data = current_user.passport_data
+    form.department.data = current_user.department
+    form.position.data = current_user.position
+    form.responsibilities.data = current_user.responsibilities
 
     return render_template('edit_profile.html', title='Edit Profile', form=form)
-
 
 if __name__ == '__main__':
     app.run(debug=True)
