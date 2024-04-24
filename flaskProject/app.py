@@ -221,26 +221,34 @@ def profile(user_id):
     return render_template('profile.html', title='Profile', form=form, user=user)
 
 
-@app.route("/edit_profile", methods=['GET', 'POST'])
+@app.route("/edit_profile/<int:user_id>", methods=['GET', 'POST'])
 @login_required
-def edit_profile():
+def edit_profile(user_id):
     form = EditProfileForm()
 
+    # Получаем текущего пользователя
+    user = current_user
+
+    # Проверяем, соответствует ли текущий пользователь пользователю, чей профиль он пытается редактировать
+    if user.id != user_id:
+        flash('You are not authorized to edit this profile.', 'danger')
+        return redirect(url_for('main'))  # Перенаправляем на главную страницу или на другую страницу, если нужно
+
     if form.validate_on_submit():
-        current_user.bio = form.bio.data
-        current_user.passport_data = form.passport_data.data
-        current_user.department = form.department.data
-        current_user.position = form.position.data
-        current_user.responsibilities = form.responsibilities.data
+        user.bio = form.bio.data
+        user.passport_data = form.passport_data.data
+        user.department = form.department.data
+        user.position = form.position.data
+        user.responsibilities = form.responsibilities.data
         db.session.commit()
         flash('Your profile has been updated!', 'success')
-        return redirect(url_for('profile'))
+        return redirect(url_for('profile', user_id=user_id))  # Перенаправляем на страницу профиля после успешного обновления
 
-    form.bio.data = current_user.bio
-    form.passport_data.data = current_user.passport_data
-    form.department.data = current_user.department
-    form.position.data = current_user.position
-    form.responsibilities.data = current_user.responsibilities
+    form.bio.data = user.bio
+    form.passport_data.data = user.passport_data
+    form.department.data = user.department
+    form.position.data = user.position
+    form.responsibilities.data = user.responsibilities
 
     return render_template('edit_profile.html', title='Edit Profile', form=form)
 

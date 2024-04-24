@@ -22,7 +22,7 @@
                         <a class="nav-link" href="{{ url_for('departments') }}">Departments</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+                        <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}">Profile</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -33,32 +33,32 @@
     </header>
     <main class="container">
         <h1>Edit Profile</h1>
-        <form method="POST" action="{{ url_for('edit_profile') }}">
-            {{ form.hidden_tag() }}
-            <div class="form-group">
-                <label class="form-control-label">Bio: </label>
-                {{ form.bio(class="form-control") }}
-            </div>
-            <div class="form-group">
-                <label class="form-control-label">Passport Data: </label>
-                {{ form.passport_data(class="form-control") }}
-            </div>
-            <div class="form-group">
-                <label class="form-control-label">Department: </label>
-                {{ form.department(class="form-control") }}
-            </div>
-            <div class="form-group">
-                <label class="form-control-label">Position: </label>
-                {{ form.position(class="form-control") }}
-            </div>
-            <div class="form-group">
-                <label class="form-control-label">Responsibilities: </label>
-                {{ form.responsibilities(class="form-control") }}
-            </div>
-            <div class="form-group">
-                {{ form.submit(class="btn btn-primary") }}
-            </div>
-        </form>
+        <form method="POST" action="{{ url_for('edit_profile', user_id=current_user.id) }}">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        <label class="form-control-label">Bio: </label>
+        {{ form.bio(class="form-control") }}
+    </div>
+    <div class="form-group">
+        <label class="form-control-label">Passport Data: </label>
+        {{ form.passport_data(class="form-control") }}
+    </div>
+    <div class="form-group">
+        <label class="form-control-label">Department: </label>
+        {{ form.department(class="form-control") }}
+    </div>
+    <div class="form-group">
+        <label class="form-control-label">Position: </label>
+        {{ form.position(class="form-control") }}
+    </div>
+    <div class="form-group">
+        <label class="form-control-label">Responsibilities: </label>
+        {{ form.responsibilities(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
+</form>
     </main>
 </body>
 </html>
