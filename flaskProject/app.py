@@ -40,7 +40,10 @@ class Task(db.Model):
     description = db.Column(db.String(255), nullable=False)
     deadline = db.Column(db.DateTime, nullable=False)
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
-    assignee = db.relationship('User', backref='tasks')
+    assignee_user = db.relationship('User', backref='tasks')
+    assigned_tool = StringField('Assigned To')
+
+
 
 
 class Leave(db.Model):
@@ -50,10 +53,12 @@ class Leave(db.Model):
     reason = db.Column(db.String(255))
 
 
+
 class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     score = db.Column(db.Float, nullable=False)
+
 
 
 class User(UserMixin, db.Model):
@@ -66,6 +71,9 @@ class User(UserMixin, db.Model):
     department = db.Column(db.String(100))
     position = db.Column(db.String(100))
     responsibilities = db.Column(db.Text)
+    tasks_assigned = db.relationship('Task', backref='assignee', lazy=True)
+    leaves = db.relationship('Leave', backref='user', lazy=True)
+    ratings = db.relationship('Rating', backref='user', lazy=True)
 
 
 class RegistrationForm(FlaskForm):
@@ -189,6 +197,17 @@ def admin_departments():
         db.session.commit()
         flash('Отдел успешно добавлен!', 'success')
         return redirect(url_for('admin_departments'))
+
+    if task_form.validate_on_submit():
+        assigned_to_user = User.query.filter_by(username=task_form.assigned_to.data).first()
+        if assigned_to_user:
+            task = Task(description=task_form.description.data, deadline=task_form.deadline.data, assigned_to=assigned_to_user.id)
+            db.session.add(task)
+            db.session.commit()
+            flash('Задание успешно создано!', 'success')
+        else:
+            flash('Пользователь не найден!', 'danger')
+
     departments = Department.query.all()
     return render_template('admin_departments.html', title='Администрирование отделов', form=form,
                            departments=departments, task_form=task_form, leave_form=leave_form,
@@ -255,7 +274,7 @@ def profile(user_id):
         user.position = form.position.data
         user.responsibilities = form.responsibilities.data
         db.session.commit()
-        flash('Your profile has been updated!', 'success')
+        flash('Ваш профиль успешно обновлен!', 'success')
 
     form.bio.data = user.bio
     form.passport_data.data = user.passport_data
@@ -263,7 +282,10 @@ def profile(user_id):
     form.position.data = user.position
     form.responsibilities.data = user.responsibilities
 
-    return render_template('profile.html', title='Profile', form=form, user=user)
+    # Получение списка заданий пользователя
+    user_tasks = user.tasks
+
+    return render_template('profile.html', title='Профиль', form=form, user=user, user_tasks=user_tasks)
 
 
 @app.route("/edit_profile/<int:user_id>", methods=['GET', 'POST'])

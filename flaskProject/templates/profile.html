@@ -75,6 +75,12 @@
     <div class="form-group">
         <a href="{{ url_for('edit_profile', user_id=current_user.id) }}" class="btn btn-primary">Edit Profile</a>
     </div>
+        <h3>Assigned Tasks</h3>
+<ul>
+    {% for task in user_tasks %}
+        <li>{{ task.description }}</li>
+    {% endfor %}
+</ul>
     {% endif %}
 </main>
 </body>
