@@ -1,34 +1,69 @@
 {% extends 'main.html' %}
 
 {% block content %}
-    <h2>Управление членами отдела</h2>
-    <p><strong>Название отдела:</strong> {{ department.name }}</p>
-    <p><strong>Описание отдела:</strong> {{ department.description }}</p>
-    <hr>
-    <h3>Текущие участники</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Имя пользователя</th>
-                <th>Email</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
+    <div class="container">
+        <h2 class="mt-4">Управление членами отдела</h2>
+        <p><strong>Название отдела:</strong> {{ department.name }}</p>
+        <p><strong>Описание отдела:</strong> {{ department.description }}</p>
+        <hr>
+
+        <!-- Текущие участники -->
+        <h3>Текущие участники</h3>
+        <div class="row">
             {% for user in department.members %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('admin_department_members', department_id=department.id) }}">
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <button type="submit">Удалить</button>
-                        </form>
-                    </td>
-                </tr>
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ user.username }}</h5>
+                            <p class="card-text">Email: {{ user.email }}</p>
+                            <form method="POST" action="{{ url_for('admin_department_members', department_id=department.id) }}">
+                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                <button type="submit" class="btn btn-danger">Удалить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             {% endfor %}
-        </tbody>
-    </table>
+        </div>
+        <hr>
+
+        <!-- Форма для управления задачами участников отдела -->
+        <h3>Управление задачами</h3>
+        <form method="POST">
+            {{ task_form.hidden_tag() }}
+            <div class="form-group">
+                {{ task_form.description.label }}<br>{{ task_form.description(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ task_form.deadline.label }}<br>{{ task_form.deadline(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ task_form.assigned_to.label }}<br>{{ task_form.assigned_to(class="form-control") }}
+            </div>
+            <button type="submit" class="btn btn-primary">{{ task_form.submit }}</button>
+        </form>
+
+        <!-- Форма для управления запросами на отпуск участников отдела -->
+        <h3>Управление запросами на отпуск</h3>
+        <form method="POST">
+            {{ leave_form.hidden_tag() }}
+            <div class="form-group">
+                {{ leave_form.date.label }}<br>{{ leave_form.date(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ leave_form.reason.label }}<br>{{ leave_form.reason(class="form-control") }}
+            </div>
+            <button type="submit" class="btn btn-primary">{{ leave_form.submit }}</button>
+        </form>
+
+        <!-- Форма для оценки участников отдела -->
+        <h3>Оценка участников</h3>
+        <form method="POST">
+            {{ rating_form.hidden_tag() }}
+            <div class="form-group">
+                {{ rating_form.score.label }}<br>{{ rating_form.score(class="form-control") }}
+            </div>
+            <button type="submit" class="btn btn-primary">{{ rating_form.submit }}</button>
+        </form>
+    </div>
 {% endblock %}

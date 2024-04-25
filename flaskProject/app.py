@@ -7,6 +7,7 @@ from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextA
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 from flask_bcrypt import Bcrypt
 
+
 app = Flask(__name__, template_folder='templates')
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
@@ -34,6 +35,30 @@ membership = db.Table('membership',
                       db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
                       db.Column('department_id', db.Integer, db.ForeignKey('department.id'), primary_key=True)
                       )
+
+
+# Модель для задач
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(255), nullable=False)
+    deadline = db.Column(db.DateTime, nullable=False)
+    assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
+    assignee = db.relationship('User', backref='tasks')
+
+
+# Модель для прогулов
+class Leave(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.String(255))
+
+
+# Модель для оценок
+class Rating(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    score = db.Column(db.Float, nullable=False)
 
 
 # Остальной код остается неизменным
@@ -86,6 +111,24 @@ class EditProfileForm(FlaskForm):
     position = StringField('Position')
     responsibilities = TextAreaField('Responsibilities')
     submit = SubmitField('Save Changes')
+
+
+class TaskForm(FlaskForm):
+    description = TextAreaField('Description', validators=[DataRequired()])
+    deadline = StringField('Deadline', validators=[DataRequired()])
+    assigned_to = StringField('Assigned To')
+    submit = SubmitField('Create Task')
+
+
+class LeaveForm(FlaskForm):
+    date = StringField('Date', validators=[DataRequired()])
+    reason = TextAreaField('Reason')
+    submit = SubmitField('Submit Leave Request')
+
+
+class RatingForm(FlaskForm):
+    score = StringField('Score', validators=[DataRequired()])
+    submit = SubmitField('Submit Rating')
 
 
 @app.route('/')
@@ -142,6 +185,10 @@ def departments():
 @login_required
 def admin_departments():
     form = DepartmentForm()
+    task_form = TaskForm()  # Добавляем форму для создания задач
+    leave_form = LeaveForm()  # Добавляем форму для отправки запроса на отпуск
+    rating_form = RatingForm()  # Добавляем форму для оценки пользователей
+
     if form.validate_on_submit():
         department = Department(name=form.name.data, description=form.description.data)
         db.session.add(department)
@@ -150,13 +197,19 @@ def admin_departments():
         return redirect(url_for('admin_departments'))
     departments = Department.query.all()
     return render_template('admin_departments.html', title='Администрирование отделов', form=form,
-                           departments=departments)
+                           departments=departments, task_form=task_form, leave_form=leave_form,
+                           rating_form=rating_form)
+
+
 
 
 @app.route("/admin_department_members/<int:department_id>", methods=['GET', 'POST'])
 @login_required
 def admin_department_members(department_id):
     department = Department.query.get_or_404(department_id)
+    task_form = TaskForm()  # Создание объекта формы TaskForm
+    leave_form = LeaveForm()  # Создание объекта формы LeaveForm
+    rating_form = RatingForm()  # Создание объекта формы RatingForm
 
     if request.method == 'POST':
         user_id = request.form.get('user_id')
@@ -168,11 +221,9 @@ def admin_department_members(department_id):
                 flash('Пользователь успешно удален из отдела!', 'success')
             else:
                 flash('Пользователь не состоит в этом отделе!', 'danger')
-        return redirect(url_for('admin_department_members',
-                                department_id=department.id))  # Перенаправляем на ту же страницу после удаления
+        return redirect(url_for('admin_department_members', department_id=department.id))
 
-    return render_template('admin_department_members.html', title='Управление членами отдела', department=department)
-
+    return render_template('admin_department_members.html', title='Управление членами отдела', department=department, task_form=task_form, leave_form=leave_form, rating_form=rating_form)
 
 @app.route("/join_department/<int:department_id>", methods=['GET', 'POST'])
 @login_required
@@ -242,7 +293,8 @@ def edit_profile(user_id):
         user.responsibilities = form.responsibilities.data
         db.session.commit()
         flash('Your profile has been updated!', 'success')
-        return redirect(url_for('profile', user_id=user_id))  # Перенаправляем на страницу профиля после успешного обновления
+        return redirect(
+            url_for('profile', user_id=user_id))  # Перенаправляем на страницу профиля после успешного обновления
 
     form.bio.data = user.bio
     form.passport_data.data = user.passport_data
