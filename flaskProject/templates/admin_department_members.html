@@ -18,7 +18,26 @@
                             <p class="card-text">Email: {{ user.email }}</p>
                             <form method="POST" action="{{ url_for('admin_department_members', department_id=department.id) }}">
                                 <input type="hidden" name="user_id" value="{{ user.id }}">
-                                <button type="submit" class="btn btn-danger">Удалить</button>
+                                <button type="submit" class="btn btn-danger" title="Удалить">Удалить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <hr>
+
+        <!-- Управление пользователями -->
+        <h3>Зарегистрированные пользователи</h3>
+        <div class="row">
+            {% for user in all_users %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ user.username }}</h5>
+                            <p class="card-text">Email: {{ user.email }}</p>
+                            <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}">
+                                <button type="submit" class="btn btn-danger" title="Удалить пользователя">Удалить пользователя</button>
                             </form>
                         </div>
                     </div>
@@ -32,15 +51,22 @@
         <form method="POST">
             {{ task_form.hidden_tag() }}
             <div class="form-group">
-                {{ task_form.description.label }}<br>{{ task_form.description(class="form-control") }}
+                <label for="description">{{ task_form.description.label.text }}</label><br>
+                {{ task_form.description(id="description", class="form-control") }}
             </div>
             <div class="form-group">
-                {{ task_form.deadline.label }}<br>{{ task_form.deadline(class="form-control") }}
+                <label for="deadline">{{ task_form.deadline.label.text }}</label><br>
+                <input type="datetime-local" name="deadline" id="deadline" class="form-control">
             </div>
             <div class="form-group">
-                {{ task_form.assigned_to.label }}<br>{{ task_form.assigned_to(class="form-control") }}
+                <label for="assigned_to">{{ task_form.assigned_to.label.text }}</label><br>
+                <select name="assigned_to" id="assigned_to" class="form-control">
+                    {% for member in department.members %}
+                        <option value="{{ member.id }}">{{ member.username }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <button type="submit" class="btn btn-primary">{{ task_form.submit }}</button>
+            <button type="submit" class="btn btn-primary">{{ task_form.submit.text }}</button>
         </form>
 
         <!-- Форма для управления запросами на отпуск участников отдела -->
@@ -48,12 +74,14 @@
         <form method="POST">
             {{ leave_form.hidden_tag() }}
             <div class="form-group">
-                {{ leave_form.date.label }}<br>{{ leave_form.date(class="form-control") }}
+                <label for="leave_date">{{ leave_form.date.label.text }}</label><br>
+                {{ leave_form.date(id="leave_date", class="form-control") }}
             </div>
             <div class="form-group">
-                {{ leave_form.reason.label }}<br>{{ leave_form.reason(class="form-control") }}
+                <label for="leave_reason">{{ leave_form.reason.label.text }}</label><br>
+                {{ leave_form.reason(id="leave_reason", class="form-control") }}
             </div>
-            <button type="submit" class="btn btn-primary">{{ leave_form.submit }}</button>
+            <button type="submit" class="btn btn-primary">{{ leave_form.submit.text }}</button>
         </form>
 
         <!-- Форма для оценки участников отдела -->
@@ -61,9 +89,22 @@
         <form method="POST">
             {{ rating_form.hidden_tag() }}
             <div class="form-group">
-                {{ rating_form.score.label }}<br>{{ rating_form.score(class="form-control") }}
+                <label for="score">{{ rating_form.score.label.text }}</label><br>
+                {{ rating_form.score(id="score", class="form-control") }}
             </div>
-            <button type="submit" class="btn btn-primary">{{ rating_form.submit }}</button>
+            <button type="submit" class="btn btn-primary">{{ rating_form.submit.text }}</button>
         </form>
     </div>
+
+    <!-- Подключение скриптов для Datepicker -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+    <!-- Инициализация Datepicker -->
+    <script>
+        $(function() {
+            $("#datepicker").datepicker();
+        });
+    </script>
 {% endblock %}
