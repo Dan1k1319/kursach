@@ -111,7 +111,7 @@ def load_user(user_id):
 
 @app.route('/')
 def main():
-    return render_template('main.html')
+    return render_template('index.html')
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -150,6 +150,7 @@ def logout():
     return redirect(url_for('main'))
 
 @app.route("/departments")
+@login_required
 def departments():
     all_departments = Department.query.all()
     return render_template('departments.html', departments=all_departments)

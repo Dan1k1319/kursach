@@ -1,48 +1,101 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Main Page</title>
+    <title>{% block title %}HR Management System{% endblock %}</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .navbar {
+            margin-bottom: 30px;
+            background-color: #343a40;
+            padding: 15px;
+        }
+        .navbar-brand {
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .navbar-nav .nav-link {
+            color: #ffffff;
+            font-size: 1rem;
+            margin-left: 15px;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #f4f6f9;
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            margin-top: auto;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        .card-text {
+            color: #6c757d;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .badge-success {
+            background-color: #28a745;
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <nav class="navbar navbar-expand-lg">
             <a class="navbar-brand" href="{{ url_for('main') }}">HR Management System</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav ml-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main') }}">Home</a>
+                        <a class="nav-link" href="{{ url_for('main') }}">Главная</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('departments') }}">Departments</a>
+                        <a class="nav-link" href="{{ url_for('departments') }}">Отделы</a>
                     </li>
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}">Profile</a>
+                        <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}">Профиль</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        <a class="nav-link" href="{{ url_for('logout') }}">Выйти</a>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        <a class="nav-link" href="{{ url_for('login') }}">Войти</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                        <a class="nav-link" href="{{ url_for('register') }}">Регистрация</a>
                     </li>
                     {% endif %}
                 </ul>
             </div>
         </nav>
     </header>
-    <main class="container">
+    <main>
         {% block content %}{% endblock %}
     </main>
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 HR Management System. Все права защищены.</p>
+        </div>
+    </footer>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
