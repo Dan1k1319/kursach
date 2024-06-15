@@ -25,6 +25,7 @@ def upgrade():
         batch_op.add_column(sa.Column('department', sa.String(length=100), nullable=True))
         batch_op.add_column(sa.Column('position', sa.String(length=100), nullable=True))
         batch_op.add_column(sa.Column('responsibilities', sa.Text(), nullable=True))
+        batch_op.add_column(sa.Column('role', sa.String(length=20), nullable=False, server_default='Employee'))
 
     # ### end Alembic commands ###
 
@@ -37,6 +38,7 @@ def downgrade():
         batch_op.drop_column('department')
         batch_op.drop_column('passport_data')
         batch_op.drop_column('bio')
+        batch_op.drop_column('role')
 
     op.create_table('user_profile',
     sa.Column('id', sa.INTEGER(), nullable=False),

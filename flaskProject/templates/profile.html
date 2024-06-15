@@ -1,136 +1,37 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профиль пользователя</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .navbar {
-            margin-bottom: 30px;
-        }
-        .container {
-            background: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-control-label {
-            font-weight: bold;
-            color: #343a40;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #004085;
-        }
-        .tasks-list {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        .tasks-list li {
-            padding: 10px;
-            margin-bottom: 10px;
-            background: #e9ecef;
-            border-radius: 5px;
-        }
-    </style>
-</head>
-<body>
-<header>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="{{ url_for('main') }}">HR Management System</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('main') }}">Главная</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('departments') }}">Отделы</a>
-                </li>
-                {% if current_user.is_authenticated %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('profile', user_id=current_user.id) }}">Профиль</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('logout') }}">Выйти</a>
-                </li>
-                {% else %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('login') }}">Войти</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('register') }}">Регистрация</a>
-                </li>
-                {% endif %}
-            </ul>
-        </div>
-    </nav>
-</header>
-<main class="container">
-    <h1>Профиль пользователя</h1>
-    <div class="form-group">
-        <label class="form-control-label">Имя пользователя: </label>
-        <p>{{ user.username }}</p>
-    </div>
-    <div class="form-group">
-        <label class="form-control-label">Электронная почта: </label>
-        <p>{{ user.email }}</p>
-    </div>
-    <div class="form-group">
-        <label class="form-control-label">Биография: </label>
-        <p>{{ user.bio }}</p>
-    </div>
-    <div class="form-group">
-        <label class="form-control-label">Паспортные данные: </label>
-        {% if current_user.id == user.id %}
-        <p>{{ user.passport_data }}</p>
-        {% else %}
-        <p>Скрытые данные</p>
-        {% endif %}
-    </div>
-    <div class="form-group">
-        <label class="form-control-label">Отдел: </label>
-        <p>{{ department_name }}</p>
-    </div>
-    <div class="form-group">
-        <label class="form-control-label">Должность: </label>
-        <p>{{ user.position }}</p>
-    </div>
-    <div class="form-group">
-        <label class="form-control-label">Обязанности: </label>
-        <p>{{ user.responsibilities }}</p>
-    </div>
-    {% if current_user.id == user.id %}
-    <div class="form-group">
-        <a href="{{ url_for('edit_profile', user_id=current_user.id) }}" class="btn btn-primary">Редактировать профиль</a>
-    </div>
-    <h3>Назначенные задачи</h3>
-    <ul class="tasks-list">
+{% extends "main.html" %}
+
+{% block title %}Профиль пользователя - HR Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Профиль пользователя: {{ user.username }}</h2>
+    <dl class="row">
+        <dt class="col-sm-3">Email:</dt>
+        <dd class="col-sm-9">{{ user.email }}</dd>
+        <dt class="col-sm-3">Биография:</dt>
+        <dd class="col-sm-9">{{ user.bio }}</dd>
+        <dt class="col-sm-3">Паспортные данные:</dt>
+        <dd class="col-sm-9">{{ user.passport_data }}</dd>
+        <dt class="col-sm-3">Отдел:</dt>
+        <dd class="col-sm-9">{{ department_name }}</dd>
+        <dt class="col-sm-3">Позиция:</dt>
+        <dd class="col-sm-9">{{ user.position }}</dd>
+        <dt class="col-sm-3">Обязанности:</dt>
+        <dd class="col-sm-9">{{ user.responsibilities }}</dd>
+    </dl>
+    {% if current_user.role == 'Admin' or current_user.role == 'Manager' %}
+    <hr>
+    <h4 class="mt-4">Задания</h4>
+    <ul class="list-group">
         {% for task in user_tasks %}
-        <li>{{ task.description }} - Срок: {{ task.deadline.strftime('%Y-%m-%d %H:%M') }}</li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>{{ task.description }} (до {{ task.deadline.strftime('%Y-%m-%d %H:%M') }})</span>
+                <form method="POST" action="{{ url_for('complete_task', task_id=task.id) }}">
+                    <button type="submit" class="btn btn-success btn-sm">Отправить на проверку</button>
+                </form>
+            </li>
         {% endfor %}
     </ul>
     {% endif %}
-</main>
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

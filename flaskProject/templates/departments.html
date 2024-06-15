@@ -1,39 +1,42 @@
-{% extends 'main.html' %}
+{% extends "main.html" %}
+
+{% block title %}Отделы - HR Management System{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="mb-4 text-center">Список отделов</h2>
-    <div class="row">
+    <h2 class="mb-4">Список отделов</h2>
+    {% if current_user.role == 'Admin' %}
+    <a href="{{ url_for('admin_departments') }}" class="btn btn-primary mb-3">Создать отдел</a>
+    {% endif %}
+    <ul class="list-group">
         {% for department in departments %}
-            <div class="col-md-6">
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="card-title">{{ department.name }}</h5>
-                                <p class="card-text">{{ department.description }}</p>
-                            </div>
-                            <div>
-                                {% if current_user in department.members %}
-                                    <span class="badge badge-success">Присоединился</span>
-                                {% else %}
-                                    <a href="{{ url_for('join_department', department_id=department.id) }}" class="btn btn-primary btn-sm">Присоединиться</a>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <hr>
-                        <h6>Участники отдела:</h6>
-                        <ul class="list-group list-group-flush">
-                            {% for user in department.members %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <a href="{{ url_for('profile', user_id=user.id) }}">{{ user.username }}</a>
-                                </li>
-                            {% endfor %}
-                        </ul>
+            <li class="list-group-item mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5>{{ department.name }}</h5>
+                        <p>{{ department.description }}</p>
+                    </div>
+                    <div>
+                        {% if current_user in department.members %}
+                            <span class="badge badge-success">Присоединился</span>
+                        {% else %}
+                            <a href="{{ url_for('join_department', department_id=department.id) }}" class="btn btn-primary btn-sm">Присоединиться</a>
+                        {% endif %}
                     </div>
                 </div>
-            </div>
+                <hr>
+                <h6>Участники отдела:</h6>
+                <ul class="list-group">
+                    {% for user in department.members %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{{ url_for('profile', user_id=user.id) }}">{{ user.username }}</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </li>
         {% endfor %}
-    </div>
+    </ul>
 </div>
 {% endblock %}
