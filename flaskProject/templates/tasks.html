@@ -7,25 +7,26 @@
     <h2 class="mb-4">Список задач</h2>
     <ul class="nav nav-tabs">
         <li class="nav-item">
-            <a class="nav-link active" href="{{ url_for('tasks') }}">Все задачи</a>
+            <a class="nav-link {% if not status %}active{% endif %}" href="{{ url_for('tasks') }}">Все задачи</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('tasks', status='in_review') }}">Проверка</a>
+            <a class="nav-link {% if status == 'in_review' %}active{% endif %}" href="{{ url_for('tasks', status='in_review') }}">Проверка</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('tasks', status='completed') }}">Готово</a>
+            <a class="nav-link {% if status == 'completed' %}active{% endif %}" href="{{ url_for('tasks', status='completed') }}">Готово</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('tasks', status='assigned') }}">В доработке</a>
+            <a class="nav-link {% if status == 'assigned' %}active{% endif %}" href="{{ url_for('tasks', status='assigned') }}">В доработке</a>
         </li>
     </ul>
-    <table class="table table-striped">
+    <table class="table table-striped mt-4">
         <thead>
             <tr>
                 <th>Описание</th>
                 <th>Срок выполнения</th>
                 <th>Статус</th>
                 <th>Назначено</th>
+                <th>Выдано</th>
                 <th>Действия</th>
             </tr>
         </thead>
@@ -33,16 +34,29 @@
             {% for task in tasks %}
             <tr>
                 <td>{{ task.description }}</td>
-                <td>{{ task.deadline }}</td>
+                <td>{{ task.deadline.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td>{{ task.status }}</td>
                 <td>{{ task.assigned_user.username }}</td>
+                <td>{{ task.issuer.username }}</td>
                 <td>
-                    <form method="POST" action="{{ url_for('complete_task', task_id=task.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-success btn-sm">Завершить</button>
+                    {% if task.status == 'assigned' and current_user.id == task.assigned_to %}
+                    <form method="POST" action="{{ url_for('submit_for_review', task_id=task.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-warning btn-sm">Отправить на проверку</button>
                     </form>
+                    {% endif %}
+                    {% if current_user.role in ['Admin', 'Manager'] and task.status == 'in_review' %}
                     <form method="POST" action="{{ url_for('review_task', task_id=task.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-warning btn-sm">Проверить</button>
+                        <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Завершить</button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Отправить на доработку</button>
                     </form>
+                    {% endif %}
+                    {% if not (task.status == 'assigned' and current_user.id == task.assigned_to) and not (current_user.role in ['Admin', 'Manager'] and task.status == 'in_review') %}
+                        <p>Нет доступных действий для текущего статуса задачи.</p>
+                    {% endif %}
+                    <!-- Отладочный вывод -->
+                    <p>Текущий пользователь: {{ current_user.role }} - ID: {{ current_user.id }}</p>
+                    <p>Задача назначена пользователю ID: {{ task.assigned_to }} - Статус: {{ task.status }}</p>
+                    <p>Задача выдана пользователем ID: {{ task.issued_by }}</p>
                 </td>
             </tr>
             {% endfor %}

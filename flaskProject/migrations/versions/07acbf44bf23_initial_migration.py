@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial migration
 
-Revision ID: f2e3d432e0db
+Revision ID: 07acbf44bf23
 Revises: 
-Create Date: 2024-06-17 04:11:34.882536
+Create Date: 2024-06-17 16:28:02.094697
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'f2e3d432e0db'
+revision = '07acbf44bf23'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -37,6 +37,10 @@ def upgrade():
     sa.Column('position', sa.String(length=100), nullable=True),
     sa.Column('responsibilities', sa.Text(), nullable=True),
     sa.Column('role', sa.String(length=20), nullable=False),
+    sa.Column('phone_number', sa.String(length=20), nullable=True),
+    sa.Column('age', sa.String(length=20), nullable=True),
+    sa.Column('gender', sa.String(length=20), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=True),
     sa.ForeignKeyConstraint(['department_id'], ['department.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
@@ -71,7 +75,9 @@ def upgrade():
     sa.Column('deadline', sa.DateTime(), nullable=False),
     sa.Column('status', sa.String(length=20), nullable=False),
     sa.Column('assigned_to', sa.Integer(), nullable=True),
+    sa.Column('issued_by', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['assigned_to'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['issued_by'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###

@@ -7,6 +7,9 @@ from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextA
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 app = Flask(__name__, template_folder='templates')
@@ -42,7 +45,10 @@ class Task(db.Model):
     deadline = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='assigned')
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
-    assigned_user = db.relationship('User', backref='assigned_tasks', overlaps="tasks_assigned,assigned_user")
+    issued_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    assigned_user = db.relationship('User', foreign_keys=[assigned_to], back_populates='tasks_assigned')
+    issuer = db.relationship('User', foreign_keys=[issued_by], backref='issued_tasks')
 
 
 
@@ -71,14 +77,13 @@ class User(UserMixin, db.Model):
     position = db.Column(db.String(100))
     responsibilities = db.Column(db.Text)
     role = db.Column(db.String(20), nullable=False, default='Employee')
-    tasks_assigned = db.relationship('Task', backref='assignee', lazy=True, overlaps="assigned_tasks,assigned_user")
+    tasks_assigned = db.relationship('Task', foreign_keys='Task.assigned_to', back_populates='assigned_user', lazy=True)
     absences = db.relationship('Absence', backref='user', lazy=True)
     ratings = db.relationship('Rating', backref='user', lazy=True)
     phone_number = db.Column(db.String(20))
     age = db.Column(db.String(20))
     gender = db.Column(db.String(20))
     status = db.Column(db.String(20))
-
 
 class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=20)])
@@ -116,10 +121,10 @@ class EditProfileForm(FlaskForm):
 
 
 class TaskForm(FlaskForm):
-    description = TextAreaField('Description', validators=[DataRequired()])
-    deadline = DateTimeField('Deadline', validators=[DataRequired()], format='%Y-%m-%dT%H:%M')
-    assigned_to = StringField('Assigned To', validators=[DataRequired()])
-    submit = SubmitField('Create Task')
+    description = TextAreaField('Описание', validators=[DataRequired()])
+    deadline = DateTimeField('Срок выполнения', validators=[DataRequired()], format='%Y-%m-%dT%H:%M')
+    assigned_to = SelectField('Назначить пользователю', coerce=int)  # Добавлено поле для выбора пользователя
+    submit = SubmitField('Создать задачу')
 
 
 class LeaveForm(FlaskForm):
@@ -131,6 +136,7 @@ class LeaveForm(FlaskForm):
 class RatingForm(FlaskForm):
     score = StringField('Score', validators=[DataRequired()])
     submit = SubmitField('Submit Rating')
+
 
 
 @login_manager.user_loader
@@ -428,30 +434,7 @@ def assign_user_to_department(department_id):
     return redirect(url_for('admin_departments'))
 
 
-@app.route("/review_task/<int:task_id>", methods=['GET', 'POST'])
-@login_required
-def review_task(task_id):
-    task = db.session.get(Task, task_id)
-    if not task:
-        flash('Задание не найдено.', 'danger')
-        return redirect(url_for('main'))
-    if current_user.role not in ['Admin', 'Manager']:
-        flash('Доступ запрещен.', 'danger')
-        return redirect(url_for('main'))
 
-    if request.method == 'POST':
-        action = request.form.get('action')
-        comment = request.form.get('comment')
-        if action == 'approve':
-            task.status = 'completed'
-            flash('Задание одобрено!', 'success')
-        elif action == 'reject':
-            task.status = 'assigned'
-            flash('Задание отправлено на доработку!', 'warning')
-        db.session.commit()
-        return redirect(url_for('profile', user_id=current_user.id))
-
-    return render_template('review_task.html', task=task)
 
 
 @app.route('/manager_page')
@@ -463,16 +446,83 @@ def manager_page():
     return render_template('admin_departments.html')
 
 
-@app.route("/complete_task/<int:task_id>", methods=['POST'])
-@login_required
-def complete_task(task_id):
-    task = db.session.get(Task, task_id)
-    if task:
-        task.status = 'pending_review'
-        db.session.commit()
-        flash('Задание отправлено на проверку!', 'success')
-    return redirect(url_for('profile', user_id=current_user.id))
 
+
+@app.route("/assign_task", methods=['POST'])
+@login_required
+def assign_task():
+    if current_user.role not in ['Admin', 'Manager']:
+        flash('Доступ запрещен.', 'danger')
+        return redirect(url_for('main'))
+
+    description = request.form['description']
+    deadline = request.form['deadline']
+    assigned_to = request.form['assigned_to']
+    issued_by = request.form['issued_by']
+
+    app.logger.debug(f"description: {description}, deadline: {deadline}, assigned_to: {assigned_to}, issued_by: {issued_by}")
+
+    if not assigned_to:
+        flash('Значение "assigned_to" не передано.', 'danger')
+        return redirect(url_for('tasks'))
+
+    try:
+        deadline = datetime.strptime(deadline, '%Y-%m-%dT%H:%M')
+    except ValueError:
+        flash('Неправильный формат даты и времени.', 'danger')
+        return redirect(url_for('tasks'))
+
+    task = Task(description=description, deadline=deadline, assigned_to=assigned_to, issued_by=issued_by, status='assigned')
+    db.session.add(task)
+    db.session.commit()
+    flash('Задача успешно назначена!', 'success')
+    return redirect(url_for('tasks'))
+
+@app.route("/tasks")
+@login_required
+def tasks():
+    status = request.args.get('status')
+    if status:
+        tasks = Task.query.filter_by(status=status).all()
+    else:
+        tasks = Task.query.all()
+    return render_template('tasks.html', tasks=tasks, status=status)
+
+@app.route("/submit_for_review/<int:task_id>", methods=['POST'])
+@login_required
+def submit_for_review(task_id):
+    task = db.session.get(Task, task_id)
+    if not task or task.assigned_to != current_user.id:
+        flash('Задача не найдена или у вас нет прав для выполнения этой операции.', 'danger')
+        return redirect(url_for('tasks'))
+
+    task.status = 'in_review'
+    db.session.commit()
+    flash('Задача отправлена на проверку!', 'success')
+    return redirect(url_for('tasks'))
+
+@app.route("/review_task/<int:task_id>", methods=['POST'])
+@login_required
+def review_task(task_id):
+    task = db.session.get(Task, task_id)
+    if not task:
+        flash('Задача не найдена.', 'danger')
+        return redirect(url_for('tasks'))
+    if current_user.role not in ['Admin', 'Manager']:
+        flash('Доступ запрещен.', 'danger')
+        return redirect(url_for('tasks'))
+
+    action = request.form.get('action')
+    if action == 'approve':
+        task.status = 'completed'
+        flash('Задача завершена!', 'success')
+    elif action == 'reject':
+        task.status = 'assigned'
+        flash('Задача отправлена на доработку!', 'warning')
+    else:
+        flash('Неизвестное действие.', 'danger')
+    db.session.commit()
+    return redirect(url_for('tasks', status='in_review'))
 
 @app.route("/sick_leave/<int:user_id>", methods=['POST'])
 @login_required

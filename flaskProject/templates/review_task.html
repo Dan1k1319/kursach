@@ -1,0 +1,24 @@
+{% extends "main.html" %}
+
+{% block title %}Проверка задачи{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Проверка задачи</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ task.description }}</h5>
+            <p class="card-text"><strong>Срок выполнения:</strong> {{ task.deadline }}</p>
+            <p class="card-text"><strong>Назначено:</strong> {{ task.assigned_user.username }}</p>
+            <form method="POST" action="{{ url_for('review_task', task_id=task.id) }}">
+                <div class="form-group">
+                    <label for="comment">Комментарий</label>
+                    <textarea class="form-control" id="comment" name="comment"></textarea>
+                </div>
+                <button type="submit" name="action" value="approve" class="btn btn-success">Одобрить</button>
+                <button type="submit" name="action" value="reject" class="btn btn-danger">Отклонить</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
