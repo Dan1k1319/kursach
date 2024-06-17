@@ -20,7 +20,7 @@
                         {% if current_user in department.members %}
                             <span class="badge badge-success">Присоединился</span>
                         {% else %}
-                            <a href="{{ url_for('join_department', department_id=department.id) }}" class="btn btn-primary btn-sm">Присоединиться</a>
+                            <a href="{{ url_for('join_department', department_id=department.id) }}" class="btn btn-secondary btn-sm">Присоединиться</a>
                         {% endif %}
                     </div>
                 </div>
