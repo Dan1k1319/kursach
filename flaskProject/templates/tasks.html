@@ -1,0 +1,52 @@
+{% extends "main.html" %}
+
+{% block title %}Список задач - Система управления персоналом{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Список задач</h2>
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link active" href="{{ url_for('tasks') }}">Все задачи</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('tasks', status='in_review') }}">Проверка</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('tasks', status='completed') }}">Готово</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('tasks', status='assigned') }}">В доработке</a>
+        </li>
+    </ul>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Описание</th>
+                <th>Срок выполнения</th>
+                <th>Статус</th>
+                <th>Назначено</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                <td>{{ task.description }}</td>
+                <td>{{ task.deadline }}</td>
+                <td>{{ task.status }}</td>
+                <td>{{ task.assigned_user.username }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('complete_task', task_id=task.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-success btn-sm">Завершить</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('review_task', task_id=task.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-warning btn-sm">Проверить</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
