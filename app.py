@@ -8,6 +8,8 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
 import logging
+from config import Config
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -15,6 +17,9 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__, template_folder='templates')
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app = Flask(__name__, instance_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance'))
+app.config.from_object(Config)
+
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
