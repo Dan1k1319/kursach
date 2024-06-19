@@ -51,6 +51,7 @@ class Task(db.Model):
     status = db.Column(db.String(20), nullable=False, default='assigned')
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     issued_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    comment = db.Column(db.Text, nullable=True)  # Добавьте это поле
 
     assigned_user = db.relationship('User', foreign_keys=[assigned_to], back_populates='tasks_assigned')
     issuer = db.relationship('User', foreign_keys=[issued_by], backref='issued_tasks')
@@ -506,7 +507,7 @@ def submit_for_review(task_id):
     flash('Задача отправлена на проверку!', 'success')
     return redirect(url_for('tasks'))
 
-@app.route("/review_task/<int:task_id>", methods=['POST'])
+@app.route("/review_task/<int:task_id>", methods=['GET', 'POST'])
 @login_required
 def review_task(task_id):
     task = db.session.get(Task, task_id)
@@ -517,17 +518,23 @@ def review_task(task_id):
         flash('Доступ запрещен.', 'danger')
         return redirect(url_for('tasks'))
 
-    action = request.form.get('action')
-    if action == 'approve':
-        task.status = 'completed'
-        flash('Задача завершена!', 'success')
-    elif action == 'reject':
-        task.status = 'assigned'
-        flash('Задача отправлена на доработку!', 'warning')
-    else:
-        flash('Неизвестное действие.', 'danger')
-    db.session.commit()
-    return redirect(url_for('tasks', status='in_review'))
+    if request.method == 'POST':
+        action = request.form.get('action')
+        comment = request.form.get('comment', '')
+
+        if action == 'approve':
+            task.status = 'completed'
+            flash('Задача завершена!', 'success')
+        elif action == 'reject':
+            task.status = 'assigned'
+            task.comment = comment  # Сохраним комментарий для доработки
+            flash('Задача отправлена на доработку!', 'warning')
+        else:
+            flash('Неизвестное действие.', 'danger')
+        db.session.commit()
+        return redirect(url_for('tasks', status='in_review'))
+
+    return render_template('review_task.html', task=task)
 
 @app.route("/sick_leave/<int:user_id>", methods=['POST'])
 @login_required

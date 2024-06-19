@@ -27,6 +27,7 @@
                 <th>Статус</th>
                 <th>Назначено</th>
                 <th>Выдано</th>
+                <th>Комментарий</th> <!-- Добавлено новое поле -->
                 <th>Действия</th>
             </tr>
         </thead>
@@ -38,29 +39,85 @@
                 <td>{{ task.status }}</td>
                 <td>{{ task.assigned_user.username }}</td>
                 <td>{{ task.issuer.username }}</td>
+                <td>{{ task.comment }}</td> <!-- Добавлено отображение комментария -->
                 <td>
+                    <!-- Кнопка для открытия модального окна с информацией о задаче -->
+                    <button type="button" class="btn btn-info btn-sm view-task-btn" data-toggle="modal" data-target="#taskInfoModal{{ task.id }}" data-task-id="{{ task.id }}" data-description="{{ task.description }}" data-deadline="{{ task.deadline }}" data-status="{{ task.status }}" data-assigned="{{ task.assigned_user.username }}" data-issued="{{ task.issuer.username }}">
+                        Просмотр
+                    </button>
                     {% if task.status == 'assigned' and current_user.id == task.assigned_to %}
                     <form method="POST" action="{{ url_for('submit_for_review', task_id=task.id) }}" style="display:inline;">
                         <button type="submit" class="btn btn-warning btn-sm">Отправить на проверку</button>
                     </form>
                     {% endif %}
                     {% if current_user.role in ['Admin', 'Manager'] and task.status == 'in_review' %}
+                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#reviewTaskModal{{ task.id }}">
+                        Отправить на доработку
+                    </button>
                     <form method="POST" action="{{ url_for('review_task', task_id=task.id) }}" style="display:inline;">
                         <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Завершить</button>
-                        <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Отправить на доработку</button>
                     </form>
                     {% endif %}
                     {% if not (task.status == 'assigned' and current_user.id == task.assigned_to) and not (current_user.role in ['Admin', 'Manager'] and task.status == 'in_review') %}
                         <p>Нет доступных действий для текущего статуса задачи.</p>
                     {% endif %}
-                    <!-- Отладочный вывод -->
-                    <p>Текущий пользователь: {{ current_user.role }} - ID: {{ current_user.id }}</p>
-                    <p>Задача назначена пользователю ID: {{ task.assigned_to }} - Статус: {{ task.status }}</p>
-                    <p>Задача выдана пользователем ID: {{ task.issued_by }}</p>
                 </td>
             </tr>
+
+            <!-- Модальное окно для информации о задаче -->
+            <div class="modal fade" id="taskInfoModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="taskInfoModalLabel{{ task.id }}" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="taskInfoModalLabel{{ task.id }}">Информация о задаче</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>Описание:</strong> {{ task.description }}</p>
+                            <p><strong>Срок выполнения:</strong> {{ task.deadline }}</p>
+                            <p><strong>Статус:</strong> {{ task.status }}</p>
+                            <p><strong>Назначено:</strong> {{ task.assigned_user.username }}</p>
+                            <p><strong>Выдано:</strong> {{ task.issuer.username }}</p>
+                            <p><strong>Комментарий:</strong> {{ task.comment }}</p> <!-- Добавлено отображение комментария -->
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модальное окно для отправки на доработку -->
+            <div class="modal fade" id="reviewTaskModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="reviewTaskModalLabel{{ task.id }}" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <form method="POST" action="{{ url_for('review_task', task_id=task.id) }}">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="reviewTaskModalLabel{{ task.id }}">Отправить на доработку</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="comment">Комментарий</label>
+                                    <textarea class="form-control" id="comment" name="comment" required></textarea>
+                                </div>
+                                <input type="hidden" name="action" value="reject">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                                <button type="submit" class="btn btn-danger">Отправить на доработку</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
 {% endblock %}
