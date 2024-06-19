@@ -30,7 +30,7 @@
                 <p><strong>Возраст:</strong> {{ user.age }} лет</p>
                 <p><strong>Пол:</strong> {{ user.gender }}</p>
                 <p><strong>Отдел:</strong> {{ user.department.name if user.department else "Нет отдела" }}</p>
-                <p><strong>Статус:</strong>
+                <p><strong>Роль:</strong>
                     {% if user.role == 'Admin' %}
                         <span class="badge badge-danger">Администратор</span>
                     {% elif user.role == 'Manager' %}
@@ -56,12 +56,11 @@
                         </form>
                     {% endif %}
                     {% if current_user.role in ['Admin', 'Manager'] %}
-                        <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#markAbsenceModal">
+                        <button class="btn btn-warning" data-toggle="modal" data-target="#markAbsenceModal">
                             Пометить прогулы
                         </button>
                     {% endif %}
                     <a href="{{ url_for('weekly_schedule') }}" class="btn btn-info">Расписание на неделю</a>
-                </div>
                 </div>
             </div>
         </div>
@@ -145,6 +144,10 @@
 
         .btn:last-child {
             margin-right: 0;
+        }
+
+        .btn-warning {
+            font-size: 1rem; /* Увеличиваем размер текста для кнопки "Пометить прогулы" */
         }
     </style>
 {% endblock %}

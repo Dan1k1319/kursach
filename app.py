@@ -197,13 +197,18 @@ def delete_user(user_id):
 
     user = db.session.get(User, user_id)
     if user:
+        # Удалить или обновить связанные записи в таблице schedule
+        schedules = Schedule.query.filter_by(user_id=user.id).all()
+        for schedule in schedules:
+            db.session.delete(schedule)  # или можно обновить schedule.user_id на другое значение
+
+        # Теперь можно удалить пользователя
         db.session.delete(user)
         db.session.commit()
         flash('Пользователь успешно удален!', 'success')
     else:
         flash('Пользователь не найден.', 'danger')
     return redirect(url_for('main'))
-
 @app.route("/admin_departments", methods=['GET', 'POST'])
 @login_required
 def admin_departments():
@@ -307,6 +312,7 @@ def edit_profile(user_id):
     form.department.choices = department_choices
 
     if form.validate_on_submit():
+        app.logger.debug('Form validated successfully')
         user.bio = form.bio.data
         user.passport_data = form.passport_data.data
         user.department_id = form.department.data
@@ -320,6 +326,8 @@ def edit_profile(user_id):
         db.session.commit()
         flash('Ваш профиль был обновлен!', 'success')
         return redirect(url_for('profile', user_id=user_id))
+    else:
+        app.logger.debug('Form did not validate. Errors: %s', form.errors)
 
     form.bio.data = user.bio
     form.passport_data.data = user.passport_data
