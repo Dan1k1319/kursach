@@ -1,23 +1,30 @@
-"""initial migration
+"""Initial migration
 
-Revision ID: 07acbf44bf23
+Revision ID: 7e73c04807e8
 Revises: 
-Create Date: 2024-06-17 16:28:02.094697
+Create Date: 2024-06-19 21:38:39.079004
 
 """
+# migrations/versions/7e73c04807e8_initial_migration.py
+
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
-revision = '07acbf44bf23'
+revision = '7e73c04807e8'
 down_revision = None
 branch_labels = None
 depends_on = None
 
-
 def upgrade():
-    # Создаем таблицу user
+    op.create_table(
+        'department',
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('name', sa.String(length=100), nullable=False),
+        sa.Column('description', sa.String(length=255)),
+        sa.Column('manager_id', sa.Integer)  # Удалите внешний ключ на данном этапе
+    )
+
     op.create_table(
         'user',
         sa.Column('id', sa.Integer, primary_key=True),
@@ -26,7 +33,7 @@ def upgrade():
         sa.Column('password', sa.String(length=60), nullable=False),
         sa.Column('bio', sa.String(length=255)),
         sa.Column('passport_data', sa.String(length=255)),
-        sa.Column('department_id', sa.Integer, sa.ForeignKey('department.id'), nullable=True),
+        sa.Column('department_id', sa.Integer),
         sa.Column('position', sa.String(length=100)),
         sa.Column('responsibilities', sa.Text),
         sa.Column('role', sa.String(length=20), nullable=False, default='Employee'),
@@ -36,16 +43,6 @@ def upgrade():
         sa.Column('status', sa.String(length=20)),
     )
 
-    # Создаем таблицу department
-    op.create_table(
-        'department',
-        sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('name', sa.String(length=100), nullable=False),
-        sa.Column('description', sa.String(length=255)),
-        sa.Column('manager_id', sa.Integer, sa.ForeignKey('user.id')),
-    )
-
-    # Создаем таблицу task
     op.create_table(
         'task',
         sa.Column('id', sa.Integer, primary_key=True),
@@ -57,7 +54,6 @@ def upgrade():
         sa.Column('comment', sa.Text),
     )
 
-    # Создаем таблицу rating
     op.create_table(
         'rating',
         sa.Column('id', sa.Integer, primary_key=True),
@@ -65,7 +61,6 @@ def upgrade():
         sa.Column('score', sa.Float, nullable=False),
     )
 
-    # Создаем таблицу absence
     op.create_table(
         'absence',
         sa.Column('id', sa.Integer, primary_key=True),
@@ -75,7 +70,6 @@ def upgrade():
         sa.Column('type', sa.String(length=20), nullable=False),
     )
 
-    # Создаем таблицу schedule
     op.create_table(
         'schedule',
         sa.Column('id', sa.Integer, primary_key=True),
@@ -88,5 +82,5 @@ def downgrade():
     op.drop_table('absence')
     op.drop_table('rating')
     op.drop_table('task')
-    op.drop_table('department')
     op.drop_table('user')
+    op.drop_table('department')

@@ -17,8 +17,9 @@ load_dotenv()
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__, template_folder='templates')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_default_secret_key')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://site_db_wxv3_user:V203xlk86iX2DVGUbG5eKD53RnfLcVdR@dpg-cppg7hg8fa8c739fkf0g-a.oregon-postgres.render.com/site_db_wxv3')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key')
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
