@@ -188,6 +188,7 @@ def departments():
     all_departments = Department.query.all()
     return render_template('departments.html', departments=all_departments)
 
+
 @app.route("/delete_user/<int:user_id>", methods=['POST'])
 @login_required
 def delete_user(user_id):
@@ -197,10 +198,29 @@ def delete_user(user_id):
 
     user = db.session.get(User, user_id)
     if user:
-        # Удалить или обновить связанные записи в таблице schedule
+        # Удалить связанные записи в таблице schedule
         schedules = Schedule.query.filter_by(user_id=user.id).all()
         for schedule in schedules:
-            db.session.delete(schedule)  # или можно обновить schedule.user_id на другое значение
+            db.session.delete(schedule)
+
+        # Удалить связанные записи в таблице absence
+        absences = Absence.query.filter_by(user_id=user.id).all()
+        for absence in absences:
+            db.session.delete(absence)
+
+        # Удалить связанные записи в таблице rating
+        ratings = Rating.query.filter_by(user_id=user.id).all()
+        for rating in ratings:
+            db.session.delete(rating)
+
+        # Удалить связанные записи в таблице task (если применимо)
+        tasks = Task.query.filter_by(assigned_to=user.id).all()
+        for task in tasks:
+            db.session.delete(task)
+
+        tasks_issued = Task.query.filter_by(issued_by=user.id).all()
+        for task in tasks_issued:
+            db.session.delete(task)
 
         # Теперь можно удалить пользователя
         db.session.delete(user)
@@ -209,6 +229,8 @@ def delete_user(user_id):
     else:
         flash('Пользователь не найден.', 'danger')
     return redirect(url_for('main'))
+
+
 @app.route("/admin_departments", methods=['GET', 'POST'])
 @login_required
 def admin_departments():
