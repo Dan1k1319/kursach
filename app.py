@@ -228,7 +228,7 @@ def delete_user(user_id):
         flash('Пользователь успешно удален!', 'success')
     else:
         flash('Пользователь не найден.', 'danger')
-    return redirect(url_for('main'))
+    return redirect(url_for('users'))
 
 
 @app.route("/admin_departments", methods=['GET', 'POST'])
