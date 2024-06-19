@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField, SelectField, DateTimeField
@@ -11,6 +11,7 @@ import logging
 import os
 from dotenv import load_dotenv
 
+# Загружаем переменные окружения из файла .env
 load_dotenv()
 
 logging.basicConfig(level=logging.DEBUG)
@@ -32,7 +33,6 @@ membership = db.Table('membership',
                       db.Column('department_id', db.Integer, db.ForeignKey('department.id'), primary_key=True)
                       )
 
-
 class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -41,7 +41,6 @@ class Department(db.Model):
     manager = db.relationship('User', foreign_keys=[manager_id], backref='managed_departments')
     members = db.relationship('User', secondary=membership, backref='departments')
 
-
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(255), nullable=False)
@@ -49,18 +48,15 @@ class Task(db.Model):
     status = db.Column(db.String(20), nullable=False, default='assigned')
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     issued_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    comment = db.Column(db.Text, nullable=True)  # Добавьте это поле
+    comment = db.Column(db.Text, nullable=True)
 
     assigned_user = db.relationship('User', foreign_keys=[assigned_to], back_populates='tasks_assigned')
     issuer = db.relationship('User', foreign_keys=[issued_by], backref='issued_tasks')
-
-
 
 class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     score = db.Column(db.Float, nullable=False)
-
 
 class Absence(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -89,7 +85,6 @@ class User(UserMixin, db.Model):
     gender = db.Column(db.String(20))
     status = db.Column(db.String(20))
 
-
 class Schedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -103,19 +98,16 @@ class RegistrationForm(FlaskForm):
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Sign Up')
 
-
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
-
 class DepartmentForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     description = TextAreaField('Description')
     submit = SubmitField('Add Department')
-
 
 class EditProfileForm(FlaskForm):
     bio = TextAreaField('Биография')
@@ -130,35 +122,28 @@ class EditProfileForm(FlaskForm):
     role = SelectField('Роль', choices=[('Admin', 'Администратор'), ('Manager', 'Менеджер'), ('Employee', 'Работник')], validators=[DataRequired()])
     submit = SubmitField('Сохранить изменения')
 
-
 class TaskForm(FlaskForm):
     description = TextAreaField('Описание', validators=[DataRequired()])
     deadline = DateTimeField('Срок выполнения', validators=[DataRequired()], format='%Y-%m-%dT%H:%M')
-    assigned_to = SelectField('Назначить пользователю', coerce=int)  # Добавлено поле для выбора пользователя
+    assigned_to = SelectField('Назначить пользователю', coerce=int)
     submit = SubmitField('Создать задачу')
-
 
 class LeaveForm(FlaskForm):
     date = StringField('Date', validators=[DataRequired()])
     reason = TextAreaField('Reason')
     submit = SubmitField('Submit Leave Request')
 
-
 class RatingForm(FlaskForm):
     score = StringField('Score', validators=[DataRequired()])
     submit = SubmitField('Submit Rating')
-
-
 
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
-
 @app.route('/')
 def main():
     return render_template('index.html')
-
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -166,17 +151,16 @@ def register():
     if form.validate_on_submit():
         existing_user = User.query.filter_by(username=form.username.data).first()
         if existing_user:
-            flash('Username is already taken. Please choose a different one.', 'danger')
+            flash('Имя пользователя уже занято. Пожалуйста, выберите другое имя.', 'danger')
             return redirect(url_for('register'))
 
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         user = User(username=form.username.data, email=form.email.data, password=hashed_password)
         db.session.add(user)
         db.session.commit()
-        flash('Your account has been created! You are now able to log in.', 'success')
+        flash('Ваш аккаунт был создан! Теперь вы можете войти.', 'success')
         return redirect(url_for('login'))
-    return render_template('register.html', title='Register', form=form)
-
+    return render_template('register.html', title='Регистрация', form=form)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -188,9 +172,8 @@ def login():
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('main'))
         else:
-            flash('Login Unsuccessful. Please check email and password', 'danger')
-    return render_template('login.html', title='Login', form=form)
-
+            flash('Неудачный вход. Пожалуйста, проверьте email и пароль', 'danger')
+    return render_template('login.html', title='Вход', form=form)
 
 @app.route("/logout")
 @login_required
@@ -198,13 +181,11 @@ def logout():
     logout_user()
     return redirect(url_for('main'))
 
-
 @app.route("/departments")
 @login_required
 def departments():
     all_departments = Department.query.all()
     return render_template('departments.html', departments=all_departments)
-
 
 @app.route("/delete_user/<int:user_id>", methods=['POST'])
 @login_required
@@ -221,7 +202,6 @@ def delete_user(user_id):
     else:
         flash('Пользователь не найден.', 'danger')
     return redirect(url_for('main'))
-
 
 @app.route("/admin_departments", methods=['GET', 'POST'])
 @login_required
@@ -259,10 +239,6 @@ def admin_departments():
                            departments=departments, task_form=task_form, leave_form=leave_form,
                            rating_form=rating_form, all_users=all_users)
 
-
-
-
-
 @app.route("/join_department/<int:department_id>", methods=['GET', 'POST'])
 @login_required
 def join_department(department_id):
@@ -270,11 +246,10 @@ def join_department(department_id):
     if current_user not in department.members:
         department.members.append(current_user)
         db.session.commit()
-        flash('You have joined the department!', 'success')
+        flash('Вы присоединились к отделу!', 'success')
     else:
-        flash('You are already a member of this department.', 'info')
+        flash('Вы уже состоите в этом отделе.', 'info')
     return redirect(url_for('departments'))
-
 
 @app.route("/delete_department/<int:department_id>", methods=['POST'])
 @login_required
@@ -282,9 +257,8 @@ def delete_department(department_id):
     department = db.session.get(Department, department_id)
     db.session.delete(department)
     db.session.commit()
-    flash('Department has been deleted successfully!', 'success')
+    flash('Отдел успешно удален!', 'success')
     return redirect(url_for('admin_departments'))
-
 
 @app.route("/profile/<int:user_id>", methods=['GET', 'POST'])
 @login_required
@@ -316,7 +290,6 @@ def profile(user_id):
 
     return render_template('profile.html', title='Профиль', form=form, user=user, user_tasks=user_tasks,
                            task_form=task_form, department_name=department_name)
-
 
 @app.route("/edit_profile/<int:user_id>", methods=['GET', 'POST'])
 @login_required
@@ -360,7 +333,6 @@ def edit_profile(user_id):
 
     return render_template('edit_profile.html', title='Редактировать профиль', form=form, user=user)
 
-
 @app.route("/edit_department/<int:department_id>", methods=['GET', 'POST'])
 @login_required
 def edit_department(department_id):
@@ -389,7 +361,6 @@ def edit_department(department_id):
 
     return render_template('edit_department.html', form=form, department=department, all_users=all_users)
 
-
 @app.route("/assign_user_to_department/<int:department_id>", methods=['POST'])
 @login_required
 def assign_user_to_department(department_id):
@@ -409,10 +380,6 @@ def assign_user_to_department(department_id):
         flash('Пользователь уже в этом отделе.', 'info')
     return redirect(url_for('admin_departments'))
 
-
-
-
-
 @app.route('/manager_page')
 @login_required
 def manager_page():
@@ -420,9 +387,6 @@ def manager_page():
         flash('Доступ запрещен.', 'danger')
         return redirect(url_for('main'))
     return render_template('admin_departments.html')
-
-
-
 
 @app.route("/assign_task", methods=['POST'])
 @login_required
@@ -512,12 +476,11 @@ def sick_leave(user_id):
     user = db.session.get(User, user_id)
     if user:
         # Логика для обработки больничного (например, создание записи о больничном в БД)
-        flash('Sick leave has been processed successfully!', 'success')
+        flash('Больничный успешно обработан!', 'success')
         return redirect(url_for('profile', user_id=user_id))
     else:
-        flash('User not found.', 'danger')
+        flash('Пользователь не найден.', 'danger')
         return redirect(url_for('profile', user_id=current_user.id))
-
 
 @app.route("/mark_absence/<int:user_id>", methods=['POST'])
 @login_required
@@ -576,6 +539,11 @@ def weekly_schedule():
     tasks = Task.query.filter_by(assigned_to=current_user.id).all()
     return render_template('weekly_schedule.html', schedules=schedules, tasks=tasks)
 
+def auto_upgrade():
+    """Automatically upgrade the database"""
+    with app.app_context():
+        upgrade()
 
 if __name__ == '__main__':
+    auto_upgrade()  # Выполните миграции перед запуском приложения
     app.run(debug=True , host='0.0.0.0')
