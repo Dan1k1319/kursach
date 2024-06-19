@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__, template_folder='templates')
 app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgres://site_db_wxv3_user:V203xlk86iX2DVGUbG5eKD53RnfLcVdR@dpg-cppg7hg8fa8c739fkf0g-a.oregon-postgres.render.com/site_db_wxv3')
 app = Flask(__name__, instance_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance'))
 app.config.from_object(Config)
 
@@ -262,42 +262,7 @@ def admin_departments():
                            rating_form=rating_form, all_users=all_users)
 
 
-@app.route("/admin_department_members/<int:department_id>", methods=['GET', 'POST'])
-@login_required
-def admin_department_members(department_id):
-    department = db.session.get(Department, department_id)
-    task_form = TaskForm()
-    leave_form = LeaveForm()
-    rating_form = RatingForm()
 
-    if task_form.validate_on_submit() and 'description' in request.form and 'deadline' in request.form and 'assigned_to' in request.form:
-        assigned_to_user_id = int(request.form['assigned_to'])
-        assigned_to_user = User.query.get(assigned_to_user_id)
-        if assigned_to_user:
-            deadline = datetime.strptime(request.form['deadline'],
-                                         '%Y-%m-%dT%H:%M')  # Исправлено для правильного формата
-            task = Task(description=request.form['description'], deadline=deadline, assigned_to=assigned_to_user_id)
-            db.session.add(task)
-            db.session.commit()
-            flash('Task successfully assigned!', 'success')
-        else:
-            flash('User not found!', 'danger')
-
-    if request.method == 'POST' and 'user_id' in request.form:
-        user_id = request.form['user_id']
-        user = User.query.get(user_id)
-        if user in department.members:
-            department.members.remove(user)
-            db.session.commit()
-            flash('User successfully removed from the department!', 'success')
-        else:
-            flash('User is not a member of this department!', 'danger')
-        return redirect(url_for('admin_department_members', department_id=department.id))
-
-    all_users = User.query.all()  # Fetch all registered users
-
-    return render_template('admin_department_members.html', title='Manage Department Members', department=department,
-                           task_form=task_form, leave_form=leave_form, rating_form=rating_form, all_users=all_users)
 
 
 @app.route("/join_department/<int:department_id>", methods=['GET', 'POST'])
