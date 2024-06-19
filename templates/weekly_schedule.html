@@ -1,0 +1,31 @@
+{% extends "main.html" %}
+
+{% block title %}Еженедельное расписание{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Еженедельное расписание</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Задачи</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for schedule in schedules %}
+                <tr>
+                    <td>{{ schedule.day.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <ul>
+                            {% for task in tasks if task.deadline.date() == schedule.day %}
+                                <li>{{ task.description }} ({{ task.deadline.strftime('%H:%M') }})</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -91,6 +91,13 @@ class User(UserMixin, db.Model):
     gender = db.Column(db.String(20))
     status = db.Column(db.String(20))
 
+
+class Schedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    day = db.Column(db.Date, nullable=False)
+    user = db.relationship('User', backref=db.backref('schedules', lazy=True))
+
 class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=20)])
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -583,6 +590,28 @@ def users():
 
     all_users = User.query.all()
     return render_template('users.html', title='Все пользователи', users=all_users)
+
+@app.route('/weekly_schedule')
+@login_required
+def weekly_schedule():
+    if current_user.role != 'Employee':
+        return "Доступ запрещен", 403
+
+    today = datetime.today()
+    start_week = today - timedelta(days=today.weekday())
+    days_of_week = [start_week + timedelta(days=i) for i in range(7)]
+
+    schedules = []
+    for day in days_of_week:
+        schedule = Schedule.query.filter_by(user_id=current_user.id, day=day).first()
+        if not schedule:
+            schedule = Schedule(user_id=current_user.id, day=day)
+            db.session.add(schedule)
+            db.session.commit()
+        schedules.append(schedule)
+
+    tasks = Task.query.filter_by(assigned_to=current_user.id).all()
+    return render_template('weekly_schedule.html', schedules=schedules, tasks=tasks)
 
 
 if __name__ == '__main__':
