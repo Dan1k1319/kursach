@@ -27,7 +27,7 @@
                 <th>Статус</th>
                 <th>Назначено</th>
                 <th>Выдано</th>
-                <th>Комментарий</th> <!-- Добавлено новое поле -->
+                <th>Комментарий</th>
                 <th>Действия</th>
             </tr>
         </thead>
@@ -37,15 +37,14 @@
                 <td>{{ task.description }}</td>
                 <td>{{ task.deadline.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td>{{ task.status }}</td>
-                <td>{{ task.assigned_user.username }}</td>
+                <td>{{ task.assigned_user.username if task.assigned_user else task.department.name }}</td>
                 <td>{{ task.issuer.username }}</td>
-                <td>{{ task.comment }}</td> <!-- Добавлено отображение комментария -->
+                <td>{{ task.comment }}</td>
                 <td>
-                    <!-- Кнопка для открытия модального окна с информацией о задаче -->
-                    <button type="button" class="btn btn-info btn-sm view-task-btn" data-toggle="modal" data-target="#taskInfoModal{{ task.id }}" data-task-id="{{ task.id }}" data-description="{{ task.description }}" data-deadline="{{ task.deadline }}" data-status="{{ task.status }}" data-assigned="{{ task.assigned_user.username }}" data-issued="{{ task.issuer.username }}">
+                    <button type="button" class="btn btn-info btn-sm view-task-btn" data-toggle="modal" data-target="#taskInfoModal{{ task.id }}" data-task-id="{{ task.id }}" data-description="{{ task.description }}" data-deadline="{{ task.deadline }}" data-status="{{ task.status }}" data-assigned="{{ task.assigned_user.username if task.assigned_user else task.department.name }}" data-issued="{{ task.issuer.username }}">
                         Просмотр
                     </button>
-                    {% if task.status == 'assigned' and current_user.id == task.assigned_to %}
+                    {% if task.status == 'assigned' and (current_user.id == task.assigned_to or (task.department_id and current_user.department_id == task.department_id)) %}
                     <form method="POST" action="{{ url_for('submit_for_review', task_id=task.id) }}" style="display:inline;">
                         <button type="submit" class="btn btn-warning btn-sm">Отправить на проверку</button>
                     </form>
@@ -58,13 +57,12 @@
                         <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Завершить</button>
                     </form>
                     {% endif %}
-                    {% if not (task.status == 'assigned' and current_user.id == task.assigned_to) and not (current_user.role in ['Admin', 'Manager'] and task.status == 'in_review') %}
+                    {% if not ((task.status == 'assigned' and (current_user.id == task.assigned_to or (task.department_id and current_user.department_id == task.department_id))) or (current_user.role in ['Admin', 'Manager'] and task.status == 'in_review')) %}
                         <p>Нет доступных действий для текущего статуса задачи.</p>
                     {% endif %}
                 </td>
             </tr>
 
-            <!-- Модальное окно для информации о задаче -->
             <div class="modal fade" id="taskInfoModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="taskInfoModalLabel{{ task.id }}" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
@@ -78,9 +76,9 @@
                             <p><strong>Описание:</strong> {{ task.description }}</p>
                             <p><strong>Срок выполнения:</strong> {{ task.deadline }}</p>
                             <p><strong>Статус:</strong> {{ task.status }}</p>
-                            <p><strong>Назначено:</strong> {{ task.assigned_user.username }}</p>
+                            <p><strong>Назначено:</strong> {{ task.assigned_user.username if task.assigned_user else task.department.name }}</p>
                             <p><strong>Выдано:</strong> {{ task.issuer.username }}</p>
-                            <p><strong>Комментарий:</strong> {{ task.comment }}</p> <!-- Добавлено отображение комментария -->
+                            <p><strong>Комментарий:</strong> {{ task.comment }}</p>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
@@ -89,7 +87,6 @@
                 </div>
             </div>
 
-            <!-- Модальное окно для отправки на доработку -->
             <div class="modal fade" id="reviewTaskModal{{ task.id }}" tabindex="-1" role="dialog" aria-labelledby="reviewTaskModalLabel{{ task.id }}" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
@@ -119,5 +116,4 @@
         </tbody>
     </table>
 </div>
-
 {% endblock %}

@@ -3,151 +3,172 @@
 {% block title %}Профиль - Система управления персоналом{% endblock %}
 
 {% block content %}
-    <div class="container mt-5">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h4>{{ user.username }}</h4>
-                    </div>
-                    <div class="profile-img">
-                        <img src="{{ url_for('static', filename='profile.png') }}" alt="Изображение профиля"
-                             class="img-fluid">
-                    </div>
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4>{{ user.username }}</h4>
                 </div>
-                <h5>Информация:</h5>
-                <p><strong>Email:</strong> {{ user.email }}</p>
-                <p><strong>Должность:</strong> {{ user.position }}</p>
-                <p><strong>Должностные обязанности:</strong> {{ user.responsibilities }}</p>
-                <p><strong>Паспортные данные:</strong>
-                    {% if user.id == current_user.id %}
-                        {{ user.passport_data }}
-                    {% else %}
-                        <em>Скрыто</em>
-                    {% endif %}
-                </p>
-                <p><strong>Номер телефона:</strong> {{ user.phone_number }}</p>
-                <p><strong>Возраст:</strong> {{ user.age }} лет</p>
-                <p><strong>Пол:</strong> {{ user.gender }}</p>
-                <p><strong>Отдел:</strong> {{ user.department.name if user.department else "Нет отдела" }}</p>
-                <p><strong>Роль:</strong>
-                    {% if user.role == 'Admin' %}
-                        <span class="badge badge-danger">Администратор</span>
-                    {% elif user.role == 'Manager' %}
-                        <span class="badge badge-warning">Менеджер</span>
-                    {% else %}
-                        <span class="badge badge-success">Работник</span>
-                    {% endif %}
-                </p>
-                <p><strong>Прогулы:</strong></p>
-                <ul>
-                    {% for absence in user.absences %}
-                        <li>{{ absence.start_date }}{% if absence.end_date %} - {{ absence.end_date }}{% endif %}
-                            ({{ absence.type }})
-                        </li>
-                    {% endfor %}
-                </ul>
-                <div class="mt-3">
-                    <a href="{{ url_for('edit_profile', user_id=user.id) }}" class="btn btn-primary">Редактировать</a>
-                    {% if current_user.role == 'Admin' %}
-                        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}"
-                              style="display: inline;">
-                            <button type="submit" class="btn btn-danger">Удалить профиль</button>
-                        </form>
-                    {% endif %}
-                    {% if current_user.role in ['Admin', 'Manager'] %}
-                        <button class="btn btn-warning" data-toggle="modal" data-target="#markAbsenceModal">
-                            Пометить прогулы
-                        </button>
-                    {% endif %}
-                    <a href="{{ url_for('weekly_schedule') }}" class="btn btn-info">Расписание на неделю</a>
+                <div class="profile-img">
+                    <img src="{{ url_for('static', filename='profile.jpeg') }}" alt="Изображение профиля"
+                         class="img-fluid">
                 </div>
             </div>
-        </div>
-
-        <!-- Модальное окно для пометки прогулов -->
-        <div class="modal fade" id="markAbsenceModal" tabindex="-1" role="dialog"
-             aria-labelledby="markAbsenceModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <form method="POST" action="{{ url_for('mark_absence', user_id=user.id) }}">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="markAbsenceModalLabel">Пометить прогул или больничный</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="absence-start-date">Дата начала</label>
-                                <input type="date" class="form-control" id="absence-start-date" name="start_date"
-                                       required>
-                            </div>
-                            <div class="form-group">
-                                <label for="absence-end-date">Дата окончания (необязательно)</label>
-                                <input type="date" class="form-control" id="absence-end-date" name="end_date">
-                            </div>
-                            <div class="form-group">
-                                <label for="absence-type">Тип отсутствия</label>
-                                <select class="form-control" id="absence-type" name="type" required>
-                                    <option value="Прогул">Прогул</option>
-                                    <option value="Больничный">Больничный</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
-                            <button type="submit" class="btn btn-primary">Сохранить</button>
-                        </div>
+            <h5>Информация:</h5>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Должность:</strong> {{ user.position }}</p>
+            <p><strong>Должностные обязанности:</strong> {{ user.responsibilities }}</p>
+            <p><strong>Паспортные данные:</strong>
+                {% if user.id == current_user.id %}
+                    {{ user.passport_data }}
+                {% else %}
+                    <em>Скрыто</em>
+                {% endif %}
+            </p>
+            <p><strong>Номер телефона:</strong> {{ user.phone_number }}</p>
+            <p><strong>Возраст:</strong> {{ user.age }} лет</p>
+            <p><strong>Пол:</strong> {{ user.gender }}</p>
+            <p><strong>Отдел:</strong> {{ user.department.name if user.department else "Нет отдела" }}</p>
+            <p><strong>Роль:</strong>
+                {% if user.role == 'Admin' %}
+                    <span class="badge badge-danger">Администратор</span>
+                {% elif user.role == 'Manager' %}
+                    <span class="badge badge-warning">Менеджер</span>
+                {% else %}
+                    <span class="badge badge-success">Работник</span>
+                {% endif %}
+            </p>
+            <p><strong>Задачи:</strong></p>
+            <ul>
+                {% for task in user.tasks_assigned %}
+                    <li>{{ task.description }} ({{ task.deadline }}) - Статус: {{ task.status }}</li>
+                {% endfor %}
+                {% if user.department %}
+                    {% for task in user.department.tasks_assigned %}
+                        <li>{{ task.description }} ({{ task.deadline }}) - Статус: {{ task.status }} -
+                            Отдел: {{ user.department.name }}</li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+            <p><strong>Прогулы:</strong></p>
+            <ul>
+                {% for absence in user.absences %}
+                    <li>{{ absence.start_date }}{% if absence.end_date %} - {{ absence.end_date }}{% endif %}
+                        ({{ absence.type }})
+                    </li>
+                {% endfor %}
+            </ul>
+            <p><strong>Задачи:</strong></p>
+            <ul>
+                {% for task in user.tasks_assigned %}
+                    <li>{{ task.description }} ({{ task.deadline }}) - Статус: {{ task.status }}</li>
+                {% endfor %}
+                {% for task in user.department.tasks_assigned if user.department %}
+                    <li>{{ task.description }} ({{ task.deadline }}) - Статус: {{ task.status }} - Отдел: {{ user.department.name }}</li>
+                {% endfor %}
+            </ul>
+            <div class="mt-3">
+                <a href="{{ url_for('edit_profile', user_id=user.id) }}" class="btn btn-primary">Редактировать</a>
+                {% if current_user.role == 'Admin' %}
+                    <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}"
+                          style="display: inline;">
+                        <button type="submit" class="btn btn-danger">Удалить профиль</button>
                     </form>
-                </div>
+                {% endif %}
+                {% if current_user.role in ['Admin', 'Manager'] %}
+                    <button class="btn btn-warning" data-toggle="modal" data-target="#markAbsenceModal">
+                        Пометить прогулы
+                    </button>
+                {% endif %}
+                <a href="{{ url_for('weekly_schedule') }}" class="btn btn-info">Расписание на неделю</a>
             </div>
         </div>
     </div>
 
-    <style>
-        .profile-img img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-        }
+    <!-- Модальное окно для пометки прогулов -->
+    <div class="modal fade" id="markAbsenceModal" tabindex="-1" role="dialog"
+         aria-labelledby="markAbsenceModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="POST" action="{{ url_for('mark_absence', user_id=user.id) }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="markAbsenceModalLabel">Пометить прогул или больничный</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="absence-start-date">Дата начала</label>
+                            <input type="date" class="form-control" id="absence-start-date" name="start_date"
+                                   required>
+                        </div>
+                        <div class="form-group">
+                            <label for="absence-end-date">Дата окончания (необязательно)</label>
+                            <input type="date" class="form-control" id="absence-end-date" name="end_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="absence-type">Тип отсутствия</label>
+                            <select class="form-control" id="absence-type" name="type" required>
+                                <option value="Прогул">Прогул</option>
+                                <option value="Больничный">Больничный</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
-        .card-body {
-            padding: 20px;
-        }
+<style>
+    .profile-img img {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+    }
 
-        .badge-success {
-            background-color: #28a745;
-        }
+    .card-body {
+        padding: 20px;
+    }
 
-        .badge-warning {
-            background-color: #ffc107;
-        }
+    .badge-success {
+        background-color: #28a745;
+    }
 
-        .badge-danger {
-            background-color: #dc3545;
-        }
+    .badge-warning {
+        background-color: #ffc107;
+    }
 
-        .container {
-            max-width: 800px;
-            margin: auto;
-        }
+    .badge-danger {
+        background-color: #dc3545;
+    }
 
-        .card {
-            margin-top: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+    .container {
+        max-width: 800px;
+        margin: auto;
+    }
 
-        .btn {
-            margin-right: 10px;
-        }
+    .card {
+        margin-top: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-        .btn:last-child {
-            margin-right: 0;
-        }
+    .btn {
+        margin-right: 10px;
+    }
 
-        .btn-warning {
-            font-size: 1rem; /* Увеличиваем размер текста для кнопки "Пометить прогулы" */
-        }
-    </style>
+    .btn:last-child {
+        margin-right: 0;
+    }
+
+    .btn-warning {
+        font-size: 1rem; /* Увеличиваем размер текста для кнопки "Пометить прогулы" */
+    }
+</style>
 {% endblock %}

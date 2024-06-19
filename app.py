@@ -41,18 +41,28 @@ class Department(db.Model):
     manager_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     manager = db.relationship('User', foreign_keys=[manager_id], backref='managed_departments')
     members = db.relationship('User', secondary=membership, backref='departments')
+    tasks_assigned = db.relationship('Task', back_populates='department', lazy=True)
+
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(255), nullable=False)
     deadline = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='assigned')
-    assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
-    issued_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    issued_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=True)
     comment = db.Column(db.Text, nullable=True)
 
     assigned_user = db.relationship('User', foreign_keys=[assigned_to], back_populates='tasks_assigned')
     issuer = db.relationship('User', foreign_keys=[issued_by], backref='issued_tasks')
+    department = db.relationship('Department', backref='tasks')
+
+class DepartmentTaskForm(FlaskForm):
+    description = TextAreaField('Описание', validators=[DataRequired()])
+    deadline = DateTimeField('Срок выполнения', validators=[DataRequired()], format='%Y-%m-%dT%H:%M')
+    department_id = SelectField('Назначить отделу', coerce=int)
+    submit = SubmitField('Создать задачу для отдела')
 
 class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -126,7 +136,8 @@ class EditProfileForm(FlaskForm):
 class TaskForm(FlaskForm):
     description = TextAreaField('Описание', validators=[DataRequired()])
     deadline = DateTimeField('Срок выполнения', validators=[DataRequired()], format='%Y-%m-%dT%H:%M')
-    assigned_to = SelectField('Назначить пользователю', coerce=int)
+    assigned_to = SelectField('Назначить пользователю', coerce=int, choices=[])
+    assigned_to_department = SelectField('Назначить отделу', coerce=int, choices=[])
     submit = SubmitField('Создать задачу')
 
 class LeaveForm(FlaskForm):
@@ -419,35 +430,35 @@ def manager_page():
         return redirect(url_for('main'))
     return render_template('admin_departments.html')
 
-@app.route("/assign_task", methods=['POST'])
+@app.route("/assign_task", methods=["POST"])
 @login_required
 def assign_task():
     if current_user.role not in ['Admin', 'Manager']:
-        flash('Доступ запрещен.', 'danger')
-        return redirect(url_for('main'))
+        flash("Доступ запрещен.", "danger")
+        return redirect(url_for("main"))
 
-    description = request.form['description']
-    deadline = request.form['deadline']
-    assigned_to = request.form['assigned_to']
-    issued_by = request.form['issued_by']
-
-    app.logger.debug(f"description: {description}, deadline: {deadline}, assigned_to: {assigned_to}, issued_by: {issued_by}")
-
-    if not assigned_to:
-        flash('Значение "assigned_to" не передано.', 'danger')
-        return redirect(url_for('tasks'))
+    description = request.form["description"]
+    deadline = request.form["deadline"]
+    assigned_to = request.form.get("assigned_to")
+    assigned_to_department = request.form.get("assigned_to_department")
+    issued_by = current_user.id
 
     try:
-        deadline = datetime.strptime(deadline, '%Y-%m-%dT%H:%M')
+        deadline = datetime.strptime(deadline, "%Y-%m-%dT%H:%M")
     except ValueError:
-        flash('Неправильный формат даты и времени.', 'danger')
-        return redirect(url_for('tasks'))
+        flash("Неправильный формат даты и времени.", "danger")
+        return redirect(url_for("tasks"))
 
-    task = Task(description=description, deadline=deadline, assigned_to=assigned_to, issued_by=issued_by, status='assigned')
+    if assigned_to:
+        task = Task(description=description, deadline=deadline, assigned_to=assigned_to, issued_by=issued_by, status='assigned')
+    elif assigned_to_department:
+        task = Task(description=description, deadline=deadline, department_id=assigned_to_department, issued_by=issued_by, status='assigned')
+
     db.session.add(task)
     db.session.commit()
-    flash('Задача успешно назначена!', 'success')
-    return redirect(url_for('tasks'))
+    flash("Задача успешно назначена.", "success")
+    return redirect(url_for("tasks"))
+
 
 @app.route("/tasks")
 @login_required
@@ -459,18 +470,22 @@ def tasks():
         tasks = Task.query.all()
     return render_template('tasks.html', tasks=tasks, status=status)
 
-@app.route("/submit_for_review/<int:task_id>", methods=['POST'])
+@app.route("/submit_for_review/<int:task_id>", methods=["POST"])
 @login_required
 def submit_for_review(task_id):
-    task = db.session.get(Task, task_id)
-    if not task or task.assigned_to != current_user.id:
-        flash('Задача не найдена или у вас нет прав для выполнения этой операции.', 'danger')
-        return redirect(url_for('tasks'))
+    task = Task.query.get_or_404(task_id)
+    if task.assigned_to and task.assigned_to != current_user.id:
+        flash("Вы не можете отправить эту задачу на проверку.", "danger")
+        return redirect(url_for("tasks"))
 
-    task.status = 'in_review'
+    if task.department_id and task.department_id != current_user.department_id:
+        flash("Вы не можете отправить эту задачу на проверку.", "danger")
+        return redirect(url_for("tasks"))
+
+    task.status = "in_review"
     db.session.commit()
-    flash('Задача отправлена на проверку!', 'success')
-    return redirect(url_for('tasks'))
+    flash("Задача отправлена на проверку.", "success")
+    return redirect(url_for("tasks"))
 
 @app.route("/review_task/<int:task_id>", methods=['GET', 'POST'])
 @login_required
@@ -546,7 +561,8 @@ def users():
         return redirect(url_for('main'))
 
     all_users = User.query.all()
-    return render_template('users.html', title='Все пользователи', users=all_users)
+    all_departments = Department.query.all()  # Добавляем получение всех отделов
+    return render_template('users.html', title='Все пользователи', users=all_users, departments=all_departments)  # Передаем отделы в шаблон
 
 @app.route('/weekly_schedule')
 @login_required
