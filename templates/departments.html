@@ -16,13 +16,6 @@
                         <h5>{{ department.name }}</h5>
                         <p>{{ department.description }}</p>
                     </div>
-                    <div>
-                        {% if current_user in department.members %}
-                            <span class="badge badge-success">Присоединился</span>
-                        {% else %}
-                            <a href="{{ url_for('join_department', department_id=department.id) }}" class="btn btn-secondary btn-sm">Присоединиться</a>
-                        {% endif %}
-                    </div>
                 </div>
                 <hr>
                 <h6>Участники отдела:</h6>
