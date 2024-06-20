@@ -39,49 +39,49 @@
                         <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
                     </form>
                     {% endif %}
-                    <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#assignTaskModal{{ user.id }}">
+                    <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#assignTaskModal" onclick="document.getElementById('assignedToUserId').value={{ user.id }}">
                         Назначить задачу
                     </button>
                 </td>
             </tr>
-
-            <!-- Модальное окно для назначения задачи пользователю -->
-            <div class="modal fade" id="assignTaskModal{{ user.id }}" tabindex="-1" role="dialog" aria-labelledby="assignTaskModalLabel{{ user.id }}" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <form method="POST" action="{{ url_for('assign_task') }}">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="assignTaskModalLabel{{ user.id }}">Назначить задачу</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <input type="hidden" name="assigned_to" value="{{ user.id }}">
-                                <input type="hidden" name="issued_by" value="{{ current_user.id }}">
-                                <div class="form-group">
-                                    <label for="taskDescription{{ user.id }}">Описание задачи</label>
-                                    <textarea class="form-control" id="taskDescription{{ user.id }}" name="description" required></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label for="taskDeadline{{ user.id }}">Срок выполнения</label>
-                                    <input type="datetime-local" class="form-control" id="taskDeadline{{ user.id }}" name="deadline" required>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
-                                <button type="submit" class="btn btn-primary">Назначить задачу</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
             {% endfor %}
         </tbody>
     </table>
     <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#assignDepartmentTaskModal">
         Назначить задачу отделу
     </button>
+</div>
+
+<!-- Модальное окно для назначения задачи -->
+<div class="modal fade" id="assignTaskModal" tabindex="-1" role="dialog" aria-labelledby="assignTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('assign_task') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignTaskModalLabel">Назначить задачу</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="assigned_to" id="assignedToUserId">
+                    <input type="hidden" name="issued_by" value="{{ current_user.id }}">
+                    <div class="form-group">
+                        <label for="taskDescription">Описание задачи</label>
+                        <textarea class="form-control" id="taskDescription" name="description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDeadline">Срок выполнения</label>
+                        <input type="datetime-local" class="form-control" id="taskDeadline" name="deadline" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                    <button type="submit" class="btn btn-primary">Назначить задачу</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Модальное окно для назначения задачи отделу -->
@@ -129,4 +129,5 @@
         margin: auto;
     }
 </style>
+
 {% endblock %}

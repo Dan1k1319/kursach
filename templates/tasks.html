@@ -16,7 +16,7 @@
             <a class="nav-link {% if status == 'completed' %}active{% endif %}" href="{{ url_for('tasks', status='completed') }}">Готово</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if status == 'assigned' %}active{% endif %}" href="{{ url_for('tasks', status='assigned') }}">В доработке</a>
+            <a class="nav-link {% if status == 'in_progress' %}active{% endif %}" href="{{ url_for('tasks', status='in_progress') }}">В доработке</a>
         </li>
     </ul>
     <table class="table table-striped mt-4">
@@ -45,6 +45,11 @@
                         Просмотр
                     </button>
                     {% if task.status == 'assigned' and (current_user.id == task.assigned_to or (task.department_id and current_user.department_id == task.department_id)) %}
+                    <form method="POST" action="{{ url_for('submit_for_review', task_id=task.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-warning btn-sm">Отправить на проверку</button>
+                    </form>
+                    {% endif %}
+                    {% if task.status == 'in_progress' and (task.department_id and current_user.department_id == task.department_id) %}
                     <form method="POST" action="{{ url_for('submit_for_review', task_id=task.id) }}" style="display:inline;">
                         <button type="submit" class="btn btn-warning btn-sm">Отправить на проверку</button>
                     </form>

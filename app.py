@@ -30,8 +30,8 @@ login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
 
 membership = db.Table('membership',
-                      db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-                      db.Column('department_id', db.Integer, db.ForeignKey('department.id'), primary_key=True)
+                      db.Column('user_id', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), primary_key=True),
+                      db.Column('department_id', db.Integer, db.ForeignKey('department.id', ondelete='CASCADE'), primary_key=True)
                       )
 
 class Department(db.Model):
@@ -40,7 +40,7 @@ class Department(db.Model):
     description = db.Column(db.String(255), nullable=True)
     manager_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     manager = db.relationship('User', foreign_keys=[manager_id], backref='managed_departments')
-    members = db.relationship('User', secondary=membership, backref='departments')
+    members = db.relationship('User', secondary=membership, backref='departments', lazy='dynamic')
     tasks_assigned = db.relationship('Task', back_populates='department', lazy=True)
 
 
@@ -56,7 +56,7 @@ class Task(db.Model):
 
     assigned_user = db.relationship('User', foreign_keys=[assigned_to], back_populates='tasks_assigned')
     issuer = db.relationship('User', foreign_keys=[issued_by], backref='issued_tasks')
-    department = db.relationship('Department', backref='tasks')
+    department = db.relationship('Department', backref='tasks', overlaps='tasks_assigned')
 
 class DepartmentTaskForm(FlaskForm):
     description = TextAreaField('Описание', validators=[DataRequired()])
@@ -88,13 +88,14 @@ class User(UserMixin, db.Model):
     position = db.Column(db.String(100))
     responsibilities = db.Column(db.Text)
     role = db.Column(db.String(20), nullable=False, default='Employee')
-    tasks_assigned = db.relationship('Task', foreign_keys='Task.assigned_to', back_populates='assigned_user', lazy=True)
-    absences = db.relationship('Absence', backref='user', lazy=True)
-    ratings = db.relationship('Rating', backref='user', lazy=True)
+    tasks_assigned = db.relationship('Task', foreign_keys='Task.assigned_to', back_populates='assigned_user', lazy=True, cascade="all, delete-orphan")
+    absences = db.relationship('Absence', backref='user', lazy=True, cascade="all, delete-orphan")
+    ratings = db.relationship('Rating', backref='user', lazy=True, cascade="all, delete-orphan")
     phone_number = db.Column(db.String(20))
     age = db.Column(db.String(20))
     gender = db.Column(db.String(20))
     status = db.Column(db.String(20))
+    memberships = db.relationship('Department', secondary=membership, back_populates='members', cascade="all, delete")
 
 class Schedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -209,6 +210,9 @@ def delete_user(user_id):
 
     user = db.session.get(User, user_id)
     if user:
+        # Удалить связанные записи в таблице membership
+        db.session.execute(membership.delete().where(membership.c.user_id == user.id))
+
         # Удалить связанные записи в таблице schedule
         schedules = Schedule.query.filter_by(user_id=user.id).all()
         for schedule in schedules:
@@ -240,7 +244,6 @@ def delete_user(user_id):
     else:
         flash('Пользователь не найден.', 'danger')
     return redirect(url_for('users'))
-
 
 @app.route("/admin_departments", methods=['GET', 'POST'])
 @login_required
@@ -356,6 +359,12 @@ def edit_profile(user_id):
         user.age = form.age.data
         user.gender = form.gender.data
         user.role = form.role.data
+
+        # Update the membership table
+        department = Department.query.get_or_404(user.department_id)
+        if user not in department.members:
+            department.members.append(user)
+
         db.session.commit()
         flash('Ваш профиль был обновлен!', 'success')
         return redirect(url_for('profile', user_id=user_id))
@@ -403,24 +412,32 @@ def edit_department(department_id):
 
     return render_template('edit_department.html', form=form, department=department, all_users=all_users)
 
-@app.route("/assign_user_to_department/<int:department_id>", methods=['POST'])
+
+@app.route("/assign_user_to_department", methods=['POST'])
 @login_required
-def assign_user_to_department(department_id):
-    department = Department.query.get_or_404(department_id)
-    if current_user.role not in ['Admin', 'Manager'] or (
-            current_user.role == 'Manager' and department.manager_id != current_user.id):
+def assign_user_to_department():
+    if current_user.role not in ['Admin', 'Manager']:
         flash('Доступ запрещен.', 'danger')
         return redirect(url_for('main'))
 
     user_id = request.form.get('user')
-    user = User.query.get_or_404(user_id)
-    if user not in department.members:
-        department.members.append(user)
+    department_id = request.form.get('department')
+
+    user = User.query.get(user_id)
+    department = Department.query.get(department_id)
+
+    if user and department:
+        user.department_id = department.id
+        if user not in department.members:
+            department.members.append(user)
         db.session.commit()
         flash('Пользователь успешно добавлен в отдел!', 'success')
     else:
-        flash('Пользователь уже в этом отделе.', 'info')
+        flash('Ошибка при назначении пользователя в отдел.', 'danger')
+
     return redirect(url_for('admin_departments'))
+
+
 
 @app.route('/manager_page')
 @login_required
@@ -430,34 +447,60 @@ def manager_page():
         return redirect(url_for('main'))
     return render_template('admin_departments.html')
 
-@app.route("/assign_task", methods=["POST"])
+@app.route('/assign_task', methods=['POST'])
 @login_required
 def assign_task():
     if current_user.role not in ['Admin', 'Manager']:
-        flash("Доступ запрещен.", "danger")
-        return redirect(url_for("main"))
+        flash('Доступ запрещен.', 'danger')
+        return redirect(url_for('main'))
 
-    description = request.form["description"]
-    deadline = request.form["deadline"]
-    assigned_to = request.form.get("assigned_to")
-    assigned_to_department = request.form.get("assigned_to_department")
+    description = request.form['description']
+    deadline = request.form['deadline']
+    assigned_to = request.form.get('assigned_to')
+    assigned_to_department = request.form.get('assigned_to_department')
     issued_by = current_user.id
 
     try:
-        deadline = datetime.strptime(deadline, "%Y-%m-%dT%H:%M")
+        deadline = datetime.strptime(deadline, '%Y-%m-%dT%H:%M')
     except ValueError:
-        flash("Неправильный формат даты и времени.", "danger")
-        return redirect(url_for("tasks"))
+        flash('Неправильный формат даты и времени.', 'danger')
+        return redirect(url_for('tasks'))
 
     if assigned_to:
         task = Task(description=description, deadline=deadline, assigned_to=assigned_to, issued_by=issued_by, status='assigned')
     elif assigned_to_department:
         task = Task(description=description, deadline=deadline, department_id=assigned_to_department, issued_by=issued_by, status='assigned')
+    else:
+        flash('Необходимо указать получателя задачи.', 'danger')
+        return redirect(url_for('tasks'))
 
     db.session.add(task)
     db.session.commit()
-    flash("Задача успешно назначена.", "success")
-    return redirect(url_for("tasks"))
+    flash('Задача успешно назначена!', 'success')
+    return redirect(url_for('tasks'))
+
+
+
+@app.route("/remove_user_from_department/<int:user_id>/<int:department_id>", methods=['POST'])
+@login_required
+def remove_user_from_department(user_id, department_id):
+    if current_user.role not in ['Admin', 'Manager']:
+        flash('Доступ запрещен.', 'danger')
+        return redirect(url_for('main'))
+
+    user = User.query.get_or_404(user_id)
+    department = Department.query.get_or_404(department_id)
+
+    if user in department.members:
+        department.members.remove(user)
+        if user.department_id == department.id:
+            user.department_id = None  # Удаляем связь с отделом у пользователя
+        db.session.commit()
+        flash('Пользователь успешно удален из отдела!', 'success')
+    else:
+        flash('Пользователь не найден в этом отделе.', 'danger')
+
+    return redirect(url_for('admin_departments'))
 
 
 @app.route("/tasks")
@@ -470,51 +513,49 @@ def tasks():
         tasks = Task.query.all()
     return render_template('tasks.html', tasks=tasks, status=status)
 
-@app.route("/submit_for_review/<int:task_id>", methods=["POST"])
+@app.route('/submit_for_review/<int:task_id>', methods=['POST'])
 @login_required
 def submit_for_review(task_id):
-    task = Task.query.get_or_404(task_id)
-    if task.assigned_to and task.assigned_to != current_user.id:
-        flash("Вы не можете отправить эту задачу на проверку.", "danger")
-        return redirect(url_for("tasks"))
-
-    if task.department_id and task.department_id != current_user.department_id:
-        flash("Вы не можете отправить эту задачу на проверку.", "danger")
-        return redirect(url_for("tasks"))
-
-    task.status = "in_review"
-    db.session.commit()
-    flash("Задача отправлена на проверку.", "success")
-    return redirect(url_for("tasks"))
-
-@app.route("/review_task/<int:task_id>", methods=['GET', 'POST'])
-@login_required
-def review_task(task_id):
-    task = db.session.get(Task, task_id)
+    task = Task.query.get(task_id)
     if not task:
         flash('Задача не найдена.', 'danger')
         return redirect(url_for('tasks'))
-    if current_user.role not in ['Admin', 'Manager']:
-        flash('Доступ запрещен.', 'danger')
+
+    if task.assigned_to == current_user.id or (task.department_id and current_user.department_id == task.department_id):
+        task.status = 'in_review'
+        db.session.commit()
+        flash('Задача отправлена на проверку.', 'success')
+    else:
+        flash('Вы не можете отправить эту задачу на проверку.', 'danger')
+
+    return redirect(url_for('tasks'))
+
+
+@app.route('/review_task/<int:task_id>', methods=['POST'])
+@login_required
+def review_task(task_id):
+    task = Task.query.get(task_id)
+    if not task:
+        flash('Задача не найдена.', 'danger')
         return redirect(url_for('tasks'))
 
-    if request.method == 'POST':
-        action = request.form.get('action')
-        comment = request.form.get('comment', '')
+    action = request.form['action']
+    comment = request.form.get('comment', '')
 
+    if current_user.role in ['Admin', 'Manager']:
         if action == 'approve':
             task.status = 'completed'
-            flash('Задача завершена!', 'success')
         elif action == 'reject':
-            task.status = 'assigned'
-            task.comment = comment  # Сохраним комментарий для доработки
-            flash('Задача отправлена на доработку!', 'warning')
-        else:
-            flash('Неизвестное действие.', 'danger')
-        db.session.commit()
-        return redirect(url_for('tasks', status='in_review'))
+            task.status = 'in_progress'
+            task.comment = comment
 
-    return render_template('review_task.html', task=task)
+        db.session.commit()
+        flash('Статус задачи обновлен.', 'success')
+    else:
+        flash('У вас нет прав для изменения статуса задачи.', 'danger')
+
+    return redirect(url_for('tasks'))
+
 
 @app.route("/sick_leave/<int:user_id>", methods=['POST'])
 @login_required

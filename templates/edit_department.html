@@ -1,29 +1,63 @@
 {% extends "main.html" %}
 
-{% block title %}Редактировать отдел - HR Management System{% endblock %}
+{% block title %}Редактировать профиль{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="mb-4">Редактировать отдел</h2>
-    <form method="POST" action="{{ url_for('edit_department', department_id=department.id) }}">
-        {{ form.hidden_tag() }}
-        <div class="form-group">
-            <label for="name">Название отдела</label>
-            {{ form.name(class="form-control", id="name") }}
+    <div class="card">
+        <div class="card-body">
+            <h2 class="mb-4">Редактировать профиль</h2>
+            <form method="POST" action="{{ url_for('edit_profile', user_id=user.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.username.label(class="form-label") }}
+                    {{ form.username(class="form-control", value=user.username, readonly=True) }}
+                </div>
+                <div class="form-group">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-control", value=user.email) }}
+                </div>
+                <div class="form-group">
+                    {{ form.bio.label(class="form-label") }}
+                    {{ form.bio(class="form-control", value=user.bio) }}
+                </div>
+                <div class="form-group">
+                    {{ form.passport_data.label(class="form-label") }}
+                    {{ form.passport_data(class="form-control", value=user.passport_data) }}
+                </div>
+                <div class="form-group">
+                    {{ form.department.label(class="form-label") }}
+                    {{ form.department(class="form-control") }}
+                </div>
+                <div class="form-group">
+                    {{ form.position.label(class="form-label") }}
+                    {{ form.position(class="form-control", value=user.position) }}
+                </div>
+                <div class="form-group">
+                    {{ form.responsibilities.label(class="form-label") }}
+                    {{ form.responsibilities(class="form-control", value=user.responsibilities) }}
+                </div>
+                <div class="form-group">
+                    {{ form.phone_number.label(class="form-label") }}
+                    {{ form.phone_number(class="form-control", value=user.phone_number) }}
+                </div>
+                <div class="form-group">
+                    {{ form.age.label(class="form-label") }}
+                    {{ form.age(class="form-control", value=user.age) }}
+                </div>
+                <div class="form-group">
+                    {{ form.gender.label(class="form-label") }}
+                    {{ form.gender(class="form-control", value=user.gender) }}
+                </div>
+                <div class="form-group">
+                    {{ form.role.label(class="form-label") }}
+                    {{ form.role(class="form-control") }}
+                </div>
+                <div class="form-group">
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
         </div>
-        <div class="form-group">
-            <label for="description">Описание</label>
-            {{ form.description(class="form-control", id="description") }}
-        </div>
-        <div class="form-group">
-            <label for="manager">Менеджер</label>
-            <select class="form-control" id="manager" name="manager">
-                {% for user in all_users %}
-                <option value="{{ user.id }}" {% if user.id == department.manager_id %}selected{% endif %}>{{ user.username }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-    </form>
+    </div>
 </div>
 {% endblock %}
