@@ -337,51 +337,50 @@ def profile(user_id):
 @app.route("/edit_profile/<int:user_id>", methods=['GET', 'POST'])
 @login_required
 def edit_profile(user_id):
-    form = EditProfileForm()
     user = db.session.get(User, user_id)
 
     if user.id != current_user.id and current_user.role != 'Admin':
         flash('Вы не имеете прав на редактирование этого профиля.', 'danger')
         return redirect(url_for('main'))
 
+    form = EditProfileForm()
+
+    # Заполнение выпадающего списка отделов
     departments = Department.query.all()
-    department_choices = [(department.id, department.name) for department in departments]
-    form.department.choices = department_choices
+    form.department.choices = [(d.id, d.name) for d in departments]
 
     if form.validate_on_submit():
         app.logger.debug('Form validated successfully')
+        user.username = form.username.data
+        user.email = form.email.data
         user.bio = form.bio.data
         user.passport_data = form.passport_data.data
         user.department_id = form.department.data
         user.position = form.position.data
         user.responsibilities = form.responsibilities.data
-        user.email = form.email.data
         user.phone_number = form.phone_number.data
         user.age = form.age.data
         user.gender = form.gender.data
-        user.role = form.role.data
-
-        # Update the membership table
-        department = Department.query.get_or_404(user.department_id)
-        if user not in department.members:
-            department.members.append(user)
-
+        if current_user.role == 'Admin':
+            user.role = form.role.data
         db.session.commit()
         flash('Ваш профиль был обновлен!', 'success')
         return redirect(url_for('profile', user_id=user_id))
     else:
         app.logger.debug('Form did not validate. Errors: %s', form.errors)
 
+    form.username.data = user.username
+    form.email.data = user.email
     form.bio.data = user.bio
     form.passport_data.data = user.passport_data
     form.department.data = user.department_id
     form.position.data = user.position
     form.responsibilities.data = user.responsibilities
-    form.email.data = user.email
     form.phone_number.data = user.phone_number
     form.age.data = user.age
     form.gender.data = user.gender
-    form.role.data = user.role
+    if current_user.role == 'Admin':
+        form.role.data = user.role
 
     return render_template('edit_profile.html', title='Редактировать профиль', form=form, user=user)
 
