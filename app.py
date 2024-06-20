@@ -122,12 +122,13 @@ class DepartmentForm(FlaskForm):
     submit = SubmitField('Add Department')
 
 class EditProfileForm(FlaskForm):
+    username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=2, max=20)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
     bio = TextAreaField('Биография')
     passport_data = StringField('Паспортные данные')
     department = SelectField('Отдел', choices=[], coerce=int)
     position = StringField('Должность')
     responsibilities = TextAreaField('Должностные обязанности')
-    email = StringField('Email', validators=[DataRequired(), Email()])
     phone_number = StringField('Номер телефона')
     age = StringField('Возраст')
     gender = StringField('Пол')

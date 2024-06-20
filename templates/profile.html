@@ -64,9 +64,6 @@
                 {% for task in user.tasks_assigned %}
                     <li>{{ task.description }} ({{ task.deadline }}) - Статус: {{ task.status }}</li>
                 {% endfor %}
-                {% for task in user.department.tasks_assigned if user.department %}
-                    <li>{{ task.description }} ({{ task.deadline }}) - Статус: {{ task.status }} - Отдел: {{ user.department.name }}</li>
-                {% endfor %}
             </ul>
             <div class="mt-3">
                 <a href="{{ url_for('edit_profile', user_id=user.id) }}" class="btn btn-primary">Редактировать</a>
