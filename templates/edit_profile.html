@@ -49,10 +49,12 @@
                     {{ form.gender.label(class="form-label") }}
                     {{ form.gender(class="form-control", value=user.gender) }}
                 </div>
+                {% if current_user.role == 'Admin' %}
                 <div class="form-group">
                     {{ form.role.label(class="form-label") }}
                     {{ form.role(class="form-control") }}
                 </div>
+                {% endif %}
                 <div class="form-group">
                     {{ form.submit(class="btn btn-primary") }}
                 </div>
